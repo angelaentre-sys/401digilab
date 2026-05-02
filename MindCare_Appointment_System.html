@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindCare Clinic — Appointment System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #1a56db; --blue-light: #ebf2ff; --blue-dark: #1e3a8a;
+    --green: #0e7c3a; --green-light: #e6f4ec;
+    --amber: #d97706; --amber-light: #fef3c7;
+    --red: #dc2626; --red-light: #fee2e2;
+    --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+    --dark: #1f2937; --white: #ffffff;
+    --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: var(--dark); min-height: 100vh; }
+  nav { background: var(--white); border-bottom: 1px solid var(--gray-border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+  .nav-logo-icon { width: 36px; height: 36px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+  .nav-logo-text { font-weight: 700; font-size: 18px; color: var(--blue); }
+  .nav-logo-sub { font-size: 11px; color: var(--gray); font-weight: 400; display: block; line-height: 1; }
+  .nav-tabs { display: flex; gap: 4px; background: var(--gray-light); padding: 4px; border-radius: 8px; }
+  .nav-tab { padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--gray); transition: all .2s; }
+  .nav-tab.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
+  .view { display: none; } .view.active { display: block; }
+  .booking-hero { background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%); color: white; padding: 48px 24px 80px; text-align: center; }
+  .booking-hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .booking-hero p { font-size: 15px; opacity: .85; max-width: 480px; margin: 0 auto; }
+  .booking-container { max-width: 620px; margin: -48px auto 40px; padding: 0 16px; }
+  .booking-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; }
+  .steps-bar { display: flex; padding: 20px 24px 0; }
+  .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+  .step-item:not(:last-child)::after { content: ''; position: absolute; top: 14px; left: 50%; width: 100%; height: 2px; background: var(--gray-border); z-index: 0; }
+  .step-item.done:not(:last-child)::after { background: var(--blue); }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--gray-border); background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--gray); position: relative; z-index: 1; transition: all .2s; }
+  .step-item.active .step-num { border-color: var(--blue); background: var(--blue); color: white; }
+  .step-item.done .step-num { border-color: var(--blue); background: var(--blue); color: white; }
+  .step-item.done .step-num::after { content: '✓'; font-size: 13px; }
+  .step-item.done .step-num span { display: none; }
+  .step-label { font-size: 10px; color: var(--gray); margin-top: 4px; }
+  .step-item.active .step-label { color: var(--blue); font-weight: 600; }
+  .step-content { padding: 28px 24px 24px; display: none; }
+  .step-content.active { display: block; }
+  .step-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .step-subtitle { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+  .service-grid { display: grid; gap: 10px; }
+  .service-card { border: 2px solid var(--gray-border); border-radius: var(--radius-sm); padding: 14px 16px; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 14px; }
+  .service-card:hover, .service-card.selected { border-color: var(--blue); background: var(--blue-light); }
+  .service-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .service-name { font-weight: 600; font-size: 14px; }
+  .service-desc { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .service-dur { margin-left: auto; font-size: 11px; color: var(--gray); background: var(--gray-light); padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-title { font-weight: 600; font-size: 15px; }
+  .cal-nav { background: none; border: 1px solid var(--gray-border); border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 14px; color: var(--gray); }
+  .cal-nav:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-name { text-align: center; font-size: 11px; font-weight: 600; color: var(--gray); padding: 4px 0; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all .15s; border: 2px solid transparent; }
+  .cal-day:hover:not(.disabled):not(.empty) { background: var(--blue-light); color: var(--blue); }
+  .cal-day.selected { background: var(--blue); color: white; font-weight: 600; }
+  .cal-day.today:not(.selected) { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+  .cal-day.disabled { color: #d1d5db; cursor: not-allowed; }
+  .time-section { margin-bottom: 16px; }
+  .time-section-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .time-slot { border: 2px solid var(--gray-border); border-radius: var(--radius-sm); padding: 9px 8px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
+  .time-slot:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+  .time-slot.selected { border-color: var(--blue); background: var(--blue); color: white; }
+  .time-slot.unavailable { background: var(--gray-light); color: #d1d5db; cursor: not-allowed; text-decoration: line-through; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; }
+  .form-input { width: 100%; border: 1.5px solid var(--gray-border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; outline: none; transition: border .2s; font-family: inherit; }
+  .form-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,219,.1); }
+  textarea.form-input { resize: vertical; min-height: 80px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-note { font-size: 11px; color: var(--gray); margin-top: 4px; }
+  .confirm-header { text-align: center; padding: 8px 0 20px; }
+  .confirm-icon { width: 64px; height: 64px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 12px; }
+  .confirm-title { font-size: 20px; font-weight: 700; color: var(--green); }
+  .confirm-sub { font-size: 13px; color: var(--gray); margin-top: 4px; }
+  .confirm-box { background: var(--gray-light); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px; }
+  .confirm-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--gray-border); font-size: 13px; }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-label { color: var(--gray); }
+  .confirm-value { font-weight: 600; text-align: right; }
+  .reminder-notice { background: var(--blue-light); border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--blue); display: flex; gap: 8px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 22px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; font-family: inherit; }
+  .btn-primary { background: var(--blue); color: white; } .btn-primary:hover { background: var(--blue-dark); }
+  .btn-outline { background: white; color: var(--blue); border: 1.5px solid var(--blue); } .btn-outline:hover { background: var(--blue-light); }
+  .btn-gray { background: var(--gray-light); color: var(--dark); border: 1.5px solid var(--gray-border); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .step-actions { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray-border); }
+  .clinic-login { max-width: 400px; margin: 60px auto; padding: 0 16px; }
+  .login-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 36px 32px; text-align: center; }
+  .login-icon { width: 56px; height: 56px; background: var(--blue-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 16px; }
+  .login-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--gray); margin-bottom: 24px; }
+  .login-hint { font-size: 12px; color: var(--gray); margin-top: 12px; }
+  .login-error { background: var(--red-light); color: var(--red); border-radius: var(--radius-sm); padding: 10px; font-size: 13px; margin-bottom: 12px; display: none; }
+  .dashboard { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .dash-title { font-size: 22px; font-weight: 700; }
+  .dash-date { font-size: 13px; color: var(--gray); }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--white); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .stat-value { font-size: 24px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--gray); margin-top: 3px; }
+  .table-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .table-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-border); flex-wrap: wrap; gap: 10px; }
+  .table-title { font-weight: 600; font-size: 15px; }
+  .search-input { border: 1.5px solid var(--gray-border); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 13px; outline: none; font-family: inherit; }
+  .search-input:focus { border-color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; background: var(--gray-light); border-bottom: 1px solid var(--gray-border); }
+  td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--gray-border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbff; }
+  .patient-cell { display: flex; align-items: center; gap: 10px; }
+  .patient-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0; }
+  .patient-name { font-weight: 600; }
+  .patient-phone { font-size: 11px; color: var(--gray); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-confirmed { background: var(--green-light); color: var(--green); }
+  .badge-pending { background: var(--amber-light); color: var(--amber); }
+  .badge-cancelled { background: var(--red-light); color: var(--red); }
+  .badge-completed { background: var(--gray-light); color: var(--gray); }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-border); display: flex; gap: 10px; justify-content: flex-end; }
+  .reminder-timeline { margin-top: 4px; }
+  .reminder-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; position: relative; }
+  .reminder-item:not(:last-child)::after { content: ''; position: absolute; left: 11px; top: 32px; width: 2px; height: calc(100% - 20px); background: var(--gray-border); }
+  .reminder-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; z-index: 1; }
+  .reminder-dot.sent { background: var(--green-light); color: var(--green); border: 2px solid var(--green); }
+  .reminder-dot.pending { background: var(--amber-light); color: var(--amber); border: 2px solid var(--amber); }
+  .reminder-label { font-size: 13px; font-weight: 600; }
+  .reminder-time { font-size: 11px; color: var(--gray); }
+  .reminder-preview-btn { font-size: 11px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; text-decoration: underline; }
+  .sms-preview { background: #1c1c1e; border-radius: 12px; padding: 16px; margin-top: 10px; }
+  .sms-bubble { background: #2c6bed; color: white; border-radius: 16px 16px 4px 16px; padding: 10px 14px; font-size: 13px; line-height: 1.5; max-width: 85%; margin-left: auto; }
+  .sms-label { font-size: 10px; color: #8e8e93; text-align: right; margin-top: 4px; }
+  .section-label { font-size: 12px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; margin-top: 18px; }
+  .section-label:first-child { margin-top: 0; }
+  .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-border); font-size: 13px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { color: var(--gray); }
+  .detail-val { font-weight: 600; text-align: right; }
+  .today-section { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+  .today-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .today-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .today-appt { border: 1.5px solid var(--gray-border); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; transition: all .15s; }
+  .today-appt:hover { border-color: var(--blue); background: var(--blue-light); }
+  .today-time { font-size: 15px; font-weight: 700; color: var(--blue); }
+  .today-name { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .today-service { font-size: 11px; color: var(--gray); }
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-btn { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--gray-border); background: white; color: var(--gray); transition: all .15s; }
+  .filter-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .action-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--blue); font-family: inherit; font-weight: 500; padding: 4px 8px; border-radius: 4px; }
+  .action-btn:hover { background: var(--blue-light); }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--dark); color: white; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); z-index: 300; transform: translateY(80px); opacity: 0; transition: all .3s; max-width: 300px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); }
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--gray); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; font-weight: 600; color: var(--dark); }
+  @media(max-width:700px){ .stats-grid{grid-template-columns:repeat(2,1fr);} .form-row{grid-template-columns:1fr;} .time-grid{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🧠</div>
+    <div><div class="nav-logo-text">MindCare</div><span class="nav-logo-sub">Psychiatric Clinic</span></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('patient')">Book Appointment</button>
+    <button class="nav-tab" onclick="switchView('clinic')">Clinic Portal</button>
+  </div>
+</nav>
+<div class="toast" id="toast"></div>
+
+<!-- PATIENT VIEW -->
+<div class="view active" id="view-patient">
+  <div class="booking-hero">
+    <h1>Book Your Session</h1>
+    <p>Schedule a confidential appointment with our mental health professionals. Easy, private, and secure.</p>
+  </div>
+  <div class="booking-container">
+    <div class="booking-card">
+      <div class="steps-bar">
+        <div class="step-item active" id="step-ind-1"><div class="step-num"><span>1</span></div><div class="step-label">Service</div></div>
+        <div class="step-item" id="step-ind-2"><div class="step-num"><span>2</span></div><div class="step-label">Date</div></div>
+        <div class="step-item" id="step-ind-3"><div class="step-num"><span>3</span></div><div class="step-label">Time</div></div>
+        <div class="step-item" id="step-ind-4"><div class="step-num"><span>4</span></div><div class="step-label">Details</div></div>
+        <div class="step-item" id="step-ind-5"><div class="step-num"><span>5</span></div><div class="step-label">Confirm</div></div>
+      </div>
+      <!-- Step 1 -->
+      <div class="step-content active" id="step-1">
+        <div class="step-title">Select Appointment Type</div>
+        <div class="step-subtitle">Choose the type of session that best fits your needs</div>
+        <div class="service-grid">
+          <div class="service-card" onclick="selectService(this,'Initial Consultation',60)"><div class="service-icon" style="background:#ede9fe">🌱</div><div><div class="service-name">Initial Consultation</div><div class="service-desc">First visit — assessment and care planning</div></div><div class="service-dur">60 min</div></div>
+          <div class="service-card" onclick="selectService(this,'Follow-up Session',45)"><div class="service-icon" style="background:#dbeafe">🔄</div><div><div class="service-name">Follow-up Session</div><div class="service-desc">Ongoing therapy and progress review</div></div><div class="service-dur">45 min</div></div>
+          <div class="service-card" onclick="selectService(this,'Medication Review',30)"><div class="service-icon" style="background:#d1fae5">💊</div><div><div class="service-name">Medication Review</div><div class="service-desc">Psychiatric medication evaluation</div></div><div class="service-dur">30 min</div></div>
+          <div class="service-card" onclick="selectService(this,'Family Therapy',60)"><div class="service-icon" style="background:#fef9c3">👨‍👩‍👧</div><div><div class="service-name">Family Therapy</div><div class="service-desc">Sessions involving family members</div></div><div class="service-dur">60 min</div></div>
+        </div>
+        <div class="step-actions"><div></div><button class="btn btn-primary" onclick="nextStep(1)" id="btn-step1" disabled>Next →</button></div>
+      </div>
+      <!-- Step 2 -->
+      <div class="step-content" id="step-2">
+        <div class="step-title">Choose a Date</div>
+        <div class="step-subtitle">Select an available date for your appointment</div>
+        <div class="cal-header"><button class="cal-nav" onclick="changeMonth(-1)">‹</button><div class="cal-title" id="cal-title"></div><button class="cal-nav" onclick="changeMonth(1)">›</button></div>
+        <div class="cal-grid"><div class="cal-day-name">Sun</div><div class="cal-day-name">Mon</div><div class="cal-day-name">Tue</div><div class="cal-day-name">Wed</div><div class="cal-day-name">Thu</div><div class="cal-day-name">Fri</div><div class="cal-day-name">Sat</div><div id="cal-days"></div></div>
+        <div class="step-actions"><button class="btn btn-gray" onclick="prevStep(2)">← Back</button><button class="btn btn-primary" onclick="nextStep(2)" id="btn-step2" disabled>Next →</button></div>
+      </div>
+      <!-- Step 3 -->
+      <div class="step-content" id="step-3">
+        <div class="step-title">Pick a Time Slot</div>
+        <div class="step-subtitle" id="step3-date-label">Available slots for your selected date</div>
+        <div class="time-section"><div class="time-section-label">☀️ Morning</div><div class="time-grid" id="morning-slots"></div></div>
+        <div class="time-section"><div class="time-section-label">🌤️ Afternoon</div><div class="time-grid" id="afternoon-slots"></div></div>
+        <div class="step-actions"><button class="btn btn-gray" onclick="prevStep(3)">← Back</button><button class="btn btn-primary" onclick="nextStep(3)" id="btn-step3" disabled>Next →</button></div>
+      </div>
+      <!-- Step 4 -->
+      <div class="step-content" id="step-4">
+        <div class="step-title">Your Details</div>
+        <div class="step-subtitle">We'll send your appointment reminders to these contacts</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">First Name *</label><input class="form-input" type="text" id="p-fname" placeholder="Maria" oninput="checkStep4()"></div><div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" type="text" id="p-lname" placeholder="Santos" oninput="checkStep4()"></div></div>
+        <div class="form-group"><label class="form-label">Mobile Number *</label><input class="form-input" type="tel" id="p-phone" placeholder="09XX XXX XXXX" oninput="checkStep4()"><div class="form-note">📱 We'll send SMS reminders before your appointment</div></div>
+        <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" type="email" id="p-email" placeholder="maria@email.com"><div class="form-note">Optional — for email confirmation</div></div>
+        <div class="form-group"><label class="form-label">Brief Reason for Visit</label><textarea class="form-input" id="p-reason" placeholder="Optional — helps us prepare for your session..."></textarea><div class="form-note">🔒 This information is kept strictly confidential</div></div>
+        <div class="step-actions"><button class="btn btn-gray" onclick="prevStep(4)">← Back</button><button class="btn btn-primary" onclick="nextStep(4)" id="btn-step4" disabled>Review →</button></div>
+      </div>
+      <!-- Step 5 -->
+      <div class="step-content" id="step-5">
+        <div class="confirm-header"><div class="confirm-icon">✅</div><div class="confirm-title">Appointment Confirmed!</div><div class="confirm-sub">Your booking has been received. Please save your details below.</div></div>
+        <div class="confirm-box" id="confirm-details"></div>
+        <div class="reminder-notice"><span>📲</span><span>You'll receive automatic SMS reminders <strong>48 hours</strong>, <strong>24 hours</strong>, and <strong>2 hours</strong> before your appointment.</span></div>
+        <div class="step-actions" style="margin-top:20px"><button class="btn btn-outline" onclick="resetBooking()">Book Another</button><button class="btn btn-primary" onclick="switchView('clinic')">View Clinic Portal</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLINIC VIEW -->
+<div class="view" id="view-clinic">
+  <div class="clinic-login" id="clinic-login">
+    <div class="login-card">
+      <div class="login-icon">🏥</div>
+      <div class="login-title">Clinic Portal</div>
+      <div class="login-sub">Sign in to manage your appointments</div>
+      <div class="login-error" id="login-error">Incorrect email or password. Please try again.</div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="clinic-email" placeholder="clinic@email.com" onkeydown="if(event.key==='Enter')clinicLogin()"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="clinic-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')clinicLogin()"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="clinicLogin()">Sign In →</button>
+    </div>
+  </div>
+  <div id="clinic-dashboard" style="display:none">
+    <div class="dashboard">
+      <div class="dash-header">
+        <div><div class="dash-title">📋 Appointments Dashboard</div><div class="dash-date" id="dash-date"></div></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Reminders sent to all patients with upcoming appointments!','success')">📲 Send All Reminders</button>
+          <button class="btn btn-gray btn-sm" onclick="clinicLogout()">Sign Out</button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">📅</div><div><div class="stat-value" id="stat-today">0</div><div class="stat-label">Today's Appointments</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#d1fae5">✅</div><div><div class="stat-value" id="stat-confirmed">0</div><div class="stat-label">Confirmed</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">⏳</div><div><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fee2e2">❌</div><div><div class="stat-value" id="stat-noshow">0</div><div class="stat-label">No-shows (week)</div></div></div>
+      </div>
+      <div class="today-section"><div class="today-title">🌅 Today's Schedule <span id="today-count" class="badge badge-confirmed" style="font-size:11px"></span></div><div class="today-grid" id="today-grid"></div></div>
+      <div class="table-card">
+        <div class="table-header"><div class="table-title">All Appointments</div><input class="search-input" type="text" placeholder="🔍 Search patient..." oninput="filterTable(this.value)"></div>
+        <div style="padding:12px 20px 4px"><div class="filter-row" id="filter-row">
+          <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+          <button class="filter-btn" onclick="setFilter('confirmed',this)">✅ Confirmed</button>
+          <button class="filter-btn" onclick="setFilter('pending',this)">⏳ Pending</button>
+          <button class="filter-btn" onclick="setFilter('cancelled',this)">❌ Cancelled</button>
+          <button class="filter-btn" onclick="setFilter('completed',this)">✔ Completed</button>
+        </div></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Patient</th><th>Service</th><th>Date & Time</th><th>Status</th><th>Reminders</th><th>Actions</th></tr></thead><tbody id="appt-table-body"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="appt-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Appointment Details</div><button class="modal-close" onclick="closeModal('appt-modal')">✕</button></div>
+    <div class="modal-body" id="modal-content"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="sms-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title">📱 SMS Preview</div><button class="modal-close" onclick="closeModal('sms-modal')">✕</button></div>
+    <div class="modal-body" id="sms-content"></div>
+    <div class="modal-footer"><button class="btn btn-success btn-sm" onclick="closeModal('sms-modal');showToast('Reminder sent! ✓','success')">Send Now</button><button class="btn btn-gray btn-sm" onclick="closeModal('sms-modal')">Close</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── Supabase connection ───────────────────────────────────
+const SUPA_URL='https://oruasilbgcenyhkmijcb.supabase.co';
+const SUPA_KEY='sb_publishable_BOmn3tzOO1RG3G2YD-WlFw_mG_BsGas';
+const db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+
+// ── App state ─────────────────────────────────────────────
+let currentStep=1, booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:''};
+let calYear,calMonth,appointments=[],activeFilter='all';
+const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
+
+// ── Init ──────────────────────────────────────────────────
+async function init(){
+  const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
+  renderCal();
+  document.getElementById('dash-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  await loadAppointments();
+}
+
+// ── Load from Supabase ────────────────────────────────────
+async function loadAppointments(){
+  const{data,error}=await db.from('appointments').select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,patients(id,full_name,phone,email)`).order('appointment_date',{ascending:false});
+  if(error||!data||data.length===0){await seedSampleData();return;}
+  appointments=data.map(row=>{
+    const full=row.patients?.full_name||'';
+    const parts=full.trim().split(' ');
+    const fname=parts[0]||'Unknown';
+    const lname=parts.slice(1).join(' ')||'';
+    const dateStr=row.appointment_date+'T'+(row.appointment_time||'09:00:00');
+    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0]};
+  });
+  renderDashboard();
+}
+
+// ── Seed 12 sample patients + appointments on first load ──
+async function seedSampleData(){
+  const now=new Date();
+  const td=(d,h,m)=>{const x=new Date(now);x.setDate(now.getDate()+d);x.setHours(h,m,0,0);return x;};
+  const samples=[
+    {fname:'Maria',lname:'Santos',phone:'0917-234-5678',email:'maria@email.com',service:'Initial Consultation',duration:60,dt:td(0,9,0),status:'confirmed',reminders:['booking','48hr','24hr'],reason:'Anxiety management',color:'#1a56db'},
+    {fname:'Jose',lname:'Reyes',phone:'0928-345-6789',email:'',service:'Follow-up Session',duration:45,dt:td(0,10,0),status:'confirmed',reminders:['booking','48hr'],reason:'',color:'#0e7c3a'},
+    {fname:'Ana',lname:'Cruz',phone:'0939-456-7890',email:'ana@email.com',service:'Medication Review',duration:30,dt:td(0,14,0),status:'pending',reminders:['booking'],reason:'Monthly check-in',color:'#7c3aed'},
+    {fname:'Pedro',lname:'Bautista',phone:'0906-567-8901',email:'',service:'Follow-up Session',duration:45,dt:td(0,15,30),status:'confirmed',reminders:['booking','48hr','24hr'],reason:'',color:'#d97706'},
+    {fname:'Rosa',lname:'Dela Cruz',phone:'0917-678-9012',email:'rosa@email.com',service:'Family Therapy',duration:60,dt:td(1,9,0),status:'confirmed',reminders:['booking'],reason:'Family conflict resolution',color:'#dc2626'},
+    {fname:'Carlos',lname:'Garcia',phone:'0928-789-0123',email:'',service:'Initial Consultation',duration:60,dt:td(1,11,0),status:'pending',reminders:['booking'],reason:'',color:'#0891b2'},
+    {fname:'Luz',lname:'Mendoza',phone:'0939-890-1234',email:'luz@email.com',service:'Follow-up Session',duration:45,dt:td(2,10,0),status:'confirmed',reminders:['booking'],reason:'',color:'#be185d'},
+    {fname:'Ramon',lname:'Torres',phone:'0906-901-2345',email:'',service:'Medication Review',duration:30,dt:td(-1,14,0),status:'completed',reminders:['booking','48hr','24hr','2hr','post'],reason:'',color:'#065f46'},
+    {fname:'Gloria',lname:'Flores',phone:'0917-012-3456',email:'gloria@email.com',service:'Follow-up Session',duration:45,dt:td(-2,9,0),status:'cancelled',reminders:['booking','48hr'],reason:'',color:'#1a56db'},
+    {fname:'Manuel',lname:'Rivera',phone:'0928-123-4567',email:'',service:'Initial Consultation',duration:60,dt:td(-1,10,0),status:'completed',reminders:['booking','48hr','24hr','2hr','post'],reason:'Depression screening',color:'#7c3aed'},
+    {fname:'Elena',lname:'Morales',phone:'0939-234-5678',email:'elena@email.com',service:'Family Therapy',duration:60,dt:td(3,14,0),status:'confirmed',reminders:['booking'],reason:'',color:'#d97706'},
+    {fname:'Roberto',lname:'Castillo',phone:'0906-345-6789',email:'',service:'Follow-up Session',duration:45,dt:td(-3,11,0),status:'completed',reminders:['booking','48hr','24hr','2hr','post'],reason:'',color:'#dc2626'},
+  ];
+  for(const s of samples){
+    const{data:patient}=await db.from('patients').insert({full_name:s.fname+' '+s.lname,phone:s.phone,email:s.email||null,notes:s.reason||null}).select().single();
+    if(patient){
+      await db.from('appointments').insert({patient_id:patient.id,service:s.service,appointment_date:s.dt.toISOString().split('T')[0],appointment_time:s.dt.toTimeString().split(' ')[0].slice(0,5),duration_minutes:s.duration,status:s.status,notes:s.reason||null,color:s.color,reminders_sent:JSON.stringify(s.reminders)});
+    }
+  }
+  await loadAppointments();
+}
+
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-tab')[v==='patient'?0:1].classList.add('active');
+}
+
+function selectService(card,name,dur){
+  document.querySelectorAll('.service-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected'); booking.service=name; booking.duration=dur;
+  document.getElementById('btn-step1').disabled=false;
+}
+
+function nextStep(from){
+  if(from===4){
+    const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim();
+    if(!fn||!ln||!ph)return;
+    booking.fname=fn;booking.lname=ln;booking.phone=ph;
+    booking.email=document.getElementById('p-email').value.trim();
+    booking.reason=document.getElementById('p-reason').value.trim();
+    buildConfirmation(); saveBooking();
+  }
+  goToStep(from+1);
+}
+function prevStep(from){goToStep(from-1);}
+function goToStep(s){
+  document.querySelectorAll('.step-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('step-'+s).classList.add('active');
+  for(let i=1;i<=5;i++){
+    const ind=document.getElementById('step-ind-'+i);
+    ind.classList.remove('active','done');
+    if(i<s)ind.classList.add('done'); else if(i===s)ind.classList.add('active');
+  }
+  currentStep=s;
+}
+function checkStep4(){
+  const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim();
+  document.getElementById('btn-step4').disabled=!(fn&&ln&&ph);
+}
+function buildConfirmation(){
+  const d=new Date(booking.date);
+  const dateStr=d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('confirm-details').innerHTML=`
+    <div class="confirm-row"><span class="confirm-label">Patient</span><span class="confirm-value">${booking.fname} ${booking.lname}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Service</span><span class="confirm-value">${booking.service}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Date</span><span class="confirm-value">${dateStr}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Time</span><span class="confirm-value">${booking.time}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Duration</span><span class="confirm-value">${booking.duration} minutes</span></div>
+    <div class="confirm-row"><span class="confirm-label">Contact</span><span class="confirm-value">${booking.phone}</span></div>`;
+}
+async function saveBooking(){
+  const dt=new Date(booking.date);
+  const[tp,period]=booking.time.split(' ');let[h,m]=tp.split(':').map(Number);
+  if(period==='PM'&&h!==12)h+=12;if(period==='AM'&&h===12)h=0;
+  dt.setHours(h,m||0,0,0);
+  const color=COLORS[Math.floor(Math.random()*COLORS.length)];
+  const{data:patient,error:pe}=await db.from('patients').insert({full_name:booking.fname+' '+booking.lname,phone:booking.phone,email:booking.email||null,notes:booking.reason||null}).select().single();
+  if(pe){showToast('Error saving patient info');return;}
+  const{data:appt,error:ae}=await db.from('appointments').insert({patient_id:patient.id,service:booking.service,appointment_date:dt.toISOString().split('T')[0],appointment_time:dt.toTimeString().split(' ')[0].slice(0,5),duration_minutes:booking.duration,status:'confirmed',notes:booking.reason||null,color,reminders_sent:'["booking"]'}).select().single();
+  if(ae){showToast('Error saving appointment');return;}
+  appointments.unshift({id:appt.id,patientId:patient.id,fname:booking.fname,lname:booking.lname,phone:booking.phone,email:booking.email,service:booking.service,duration:booking.duration,dateTime:dt.toISOString(),status:'confirmed',remindersSent:['booking'],reason:booking.reason,color});
+  renderDashboard();
+}
+function resetBooking(){
+  booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:''};
+  document.querySelectorAll('.service-card').forEach(c=>c.classList.remove('selected'));
+  ['p-fname','p-lname','p-phone','p-email','p-reason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('btn-step1').disabled=true;goToStep(1);
+}
+
+function renderCal(){
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-title').textContent=months[calMonth]+' '+calYear;
+  const firstDay=new Date(calYear,calMonth,1).getDay(),daysInMonth=new Date(calYear,calMonth+1,0).getDate(),today=new Date();
+  let html='';
+  for(let i=0;i<firstDay;i++)html+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(calYear,calMonth,d),isToday=date.toDateString()===today.toDateString();
+    const isPast=date<new Date(today.getFullYear(),today.getMonth(),today.getDate()),isSun=date.getDay()===0;
+    const sel=booking.date&&new Date(booking.date).toDateString()===date.toDateString();
+    let cls='cal-day';if(isPast||isSun)cls+=' disabled';else if(sel)cls+=' selected';else if(isToday)cls+=' today';
+    html+=`<div class="${cls}"${!(isPast||isSun)?` onclick="selectDate(${calYear},${calMonth},${d})"`:''} >${d}</div>`;
+  }
+  document.getElementById('cal-days').innerHTML=html;
+}
+function changeMonth(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function selectDate(y,mo,d){
+  booking.date=new Date(y,mo,d);booking.time='';renderCal();renderTimeSlots();
+  document.getElementById('btn-step2').disabled=false;
+  document.getElementById('step3-date-label').textContent='Available slots for '+booking.date.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('btn-step3').disabled=true;
+}
+function renderTimeSlots(){
+  const morning=['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'];
+  const afternoon=['1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM'];
+  const unavailable=['9:00 AM','10:30 AM','2:00 PM','3:30 PM'];
+  const r=(slots,cid)=>{document.getElementById(cid).innerHTML=slots.map(t=>{const tk=unavailable.includes(t);return`<div class="time-slot${tk?' unavailable':''}"${tk?'':` onclick="selectTime(this,'${t}')"`}>${t}</div>`;}).join('');};
+  r(morning,'morning-slots');r(afternoon,'afternoon-slots');
+}
+function selectTime(el,t){document.querySelectorAll('.time-slot').forEach(s=>s.classList.remove('selected'));el.classList.add('selected');booking.time=t;document.getElementById('btn-step3').disabled=false;}
+
+async function clinicLogin(){
+  const email=document.getElementById('clinic-email').value.trim();
+  const pass=document.getElementById('clinic-pass').value;
+  document.getElementById('login-error').style.display='none';
+  if(!email||!pass){document.getElementById('login-error').textContent='Please enter your email and password.';document.getElementById('login-error').style.display='block';return;}
+  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
+  if(error){
+    document.getElementById('login-error').textContent='Incorrect email or password. Please try again.';
+    document.getElementById('login-error').style.display='block';
+  }else{
+    document.getElementById('clinic-login').style.display='none';
+    document.getElementById('clinic-dashboard').style.display='block';
+    renderDashboard();
+  }
+}
+async function clinicLogout(){
+  await db.auth.signOut();
+  document.getElementById('clinic-dashboard').style.display='none';
+  document.getElementById('clinic-login').style.display='block';
+  document.getElementById('clinic-email').value='';
+  document.getElementById('clinic-pass').value='';
+  document.getElementById('login-error').style.display='none';
+}
+
+function renderDashboard(){
+  const now=new Date(),todayStr=now.toDateString();
+  const todayAppts=appointments.filter(a=>new Date(a.dateTime).toDateString()===todayStr);
+  const weekAgo=new Date(now);weekAgo.setDate(now.getDate()-7);
+  document.getElementById('stat-today').textContent=todayAppts.length;
+  document.getElementById('stat-confirmed').textContent=appointments.filter(a=>a.status==='confirmed').length;
+  document.getElementById('stat-pending').textContent=appointments.filter(a=>a.status==='pending').length;
+  document.getElementById('stat-noshow').textContent=2;
+  const tg=document.getElementById('today-grid');
+  document.getElementById('today-count').textContent=todayAppts.length+' sessions';
+  tg.innerHTML=todayAppts.length===0?'<div style="color:var(--gray);font-size:13px">No appointments scheduled for today.</div>':todayAppts.sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime)).map(a=>`<div class="today-appt" onclick="openAppt('${a.id}')">`+`<div class="today-time">${fmtTime(a.dateTime)}</div><div class="today-name">${a.fname} ${a.lname}</div><div class="today-service">${a.service} · ${a.duration} min</div><div style="margin-top:6px">${statusBadge(a.status)}</div></div>`).join('');
+  renderTable();
+}
+
+function renderTable(){
+  const search=document.querySelector('.search-input')?document.querySelector('.search-input').value.toLowerCase():'';
+  let filtered=appointments.filter(a=>(a.fname+' '+a.lname+' '+a.phone).toLowerCase().includes(search)&&(activeFilter==='all'||a.status===activeFilter)).sort((a,b)=>new Date(b.dateTime)-new Date(a.dateTime));
+  if(!filtered.length){document.getElementById('appt-table-body').innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No appointments found</div></div></td></tr>';return;}
+  document.getElementById('appt-table-body').innerHTML=filtered.map(a=>`<tr><td><div class="patient-cell"><div class="patient-avatar" style="background:${a.color}">${a.fname[0]}${a.lname[0]}</div><div><div class="patient-name">${a.fname} ${a.lname}</div><div class="patient-phone">${a.phone}</div></div></div></td><td style="font-size:12px">${a.service}<br><span style="color:var(--gray)">${a.duration} min</span></td><td style="font-size:12px">${fmtDate(a.dateTime)}<br><span style="color:var(--gray)">${fmtTime(a.dateTime)}</span></td><td>${statusBadge(a.status)}</td><td><span style="font-size:12px;color:var(--gray)">${a.remindersSent.length} sent</span> <button class="reminder-preview-btn" onclick="showSmsPreview('${a.id}')">preview</button></td><td><button class="action-btn" onclick="openAppt('${a.id}')">View →</button></td></tr>`).join('');
+}
+
+function filterTable(v){renderTable();}
+function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
+function statusBadge(s){const m={confirmed:'badge-confirmed',pending:'badge-pending',cancelled:'badge-cancelled',completed:'badge-completed'},i={confirmed:'✅',pending:'⏳',cancelled:'❌',completed:'✔'};return`<span class="badge ${m[s]||'badge-pending'}"><span class="badge-dot"></span>${i[s]||''} ${s.charAt(0).toUpperCase()+s.slice(1)}</span>`;}
+function fmtDate(iso){return new Date(iso).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});}
+function fmtTime(iso){return new Date(iso).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit',hour12:true});}
+
+function openAppt(id){
+  const a=appointments.find(x=>x.id===id);if(!a)return;
+  const reminders=[
+    {key:'booking',label:'Booking Confirmation',when:'At time of booking',msg:`Hi ${a.fname}! Your appointment at MindCare Clinic is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or CANCEL. See you! 🌿`},
+    {key:'48hr',label:'48-Hour Reminder',when:'2 days before',msg:`Hi ${a.fname}, your appointment at MindCare Clinic is in 2 days — ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. See you soon!`},
+    {key:'24hr',label:'24-Hour Reminder',when:'1 day before',msg:`Hi ${a.fname}, your appointment at MindCare Clinic is tomorrow at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. We look forward to seeing you! 💙`},
+    {key:'2hr',label:'2-Hour Reminder',when:'2 hours before',msg:`Hi ${a.fname}, your appointment starts in 2 hours at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. See you soon! 🌿`},
+    {key:'post',label:'Post-Session Follow-up',when:'After session',msg:`Hi ${a.fname}, thank you for visiting MindCare Clinic! Would you like to book your next appointment? Reply YES or call us. A quick review would also be appreciated! 🙏`},
+  ];
+  document.getElementById('modal-content').innerHTML=`
+    <div class="section-label">Patient Information</div>
+    <div class="confirm-box">
+      <div class="detail-row"><span class="detail-key">Name</span><span class="detail-val">${a.fname} ${a.lname}</span></div>
+      <div class="detail-row"><span class="detail-key">Mobile</span><span class="detail-val">${a.phone}</span></div>
+      ${a.email?`<div class="detail-row"><span class="detail-key">Email</span><span class="detail-val">${a.email}</span></div>`:''}
+      ${a.reason?`<div class="detail-row"><span class="detail-key">Reason</span><span class="detail-val" style="max-width:60%;text-align:right;font-weight:400">${a.reason}</span></div>`:''}
+    </div>
+    <div class="section-label">Appointment</div>
+    <div class="confirm-box">
+      <div class="detail-row"><span class="detail-key">Service</span><span class="detail-val">${a.service}</span></div>
+      <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${fmtDate(a.dateTime)}</span></div>
+      <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">${fmtTime(a.dateTime)}</span></div>
+      <div class="detail-row"><span class="detail-key">Duration</span><span class="detail-val">${a.duration} minutes</span></div>
+      <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">${statusBadge(a.status)}</span></div>
+    </div>
+    <div class="section-label">Reminder Timeline</div>
+    <div class="reminder-timeline">${reminders.map(r=>{const sent=a.remindersSent.includes(r.key);return`<div class="reminder-item"><div class="reminder-dot ${sent?'sent':'pending'}">${sent?'✓':'○'}</div><div style="flex:1"><div class="reminder-label">${r.label}</div><div class="reminder-time">${r.when} · ${sent?'<span style="color:var(--green)">Sent ✓</span>':'<span style="color:var(--amber)">Pending</span>'}</div><button class="reminder-preview-btn" onclick="showSmsContent('${r.key}','${id}')">Preview message</button></div></div>`;}).join('')}</div>`;
+  document.getElementById('modal-footer').innerHTML=a.status!=='completed'&&a.status!=='cancelled'?`<button class="btn btn-success btn-sm" onclick="updateStatus('${id}','confirmed');closeModal('appt-modal');showToast('Marked as confirmed ✓','success')">✅ Confirm</button><button class="btn btn-outline btn-sm" onclick="sendNextReminder('${id}')">📲 Send Reminder</button><button class="btn btn-danger btn-sm" onclick="updateStatus('${id}','cancelled');closeModal('appt-modal');showToast('Appointment cancelled')">Cancel</button>`:`<button class="btn btn-gray btn-sm" onclick="closeModal('appt-modal')">Close</button>`;
+  document.getElementById('appt-modal').classList.add('open');
+}
+
+function showSmsContent(key,id){
+  const a=appointments.find(x=>x.id===id);
+  const msgs={booking:`Hi ${a.fname}! Your appointment at MindCare Clinic is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or CANCEL. See you! 🌿`,'48hr':`Hi ${a.fname}, your appointment at MindCare Clinic is in 2 days — ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. See you soon!`,'24hr':`Hi ${a.fname}, your appointment at MindCare Clinic is tomorrow at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. We look forward to seeing you! 💙`,'2hr':`Hi ${a.fname}, your appointment starts in 2 hours at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. See you soon! 🌿`,post:`Hi ${a.fname}, thank you for visiting MindCare Clinic! Book your next appointment? Reply YES or call us. A quick Google review would be appreciated! 🙏`};
+  const labels={booking:'Booking Confirmation','48hr':'48-Hour Reminder','24hr':'24-Hour Reminder','2hr':'2-Hour Reminder',post:'Post-Session Follow-up'};
+  document.getElementById('sms-content').innerHTML=`<p style="font-size:13px;color:var(--gray);margin-bottom:12px">This is exactly what <strong>${a.fname} ${a.lname}</strong> will receive for the <strong>${labels[key]}</strong>:</p><div class="sms-preview"><div class="sms-bubble">${msgs[key]}</div><div class="sms-label">MindCare Clinic · ${new Date().toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'})}</div></div><p style="font-size:11px;color:var(--gray);margin-top:12px;text-align:center">Sent via clinic's registered mobile number</p>`;
+  document.getElementById('appt-modal').classList.remove('open');
+  document.getElementById('sms-modal').classList.add('open');
+}
+
+function showSmsPreview(id){const a=appointments.find(x=>x.id===id);const next=['booking','48hr','24hr','2hr','post'].find(k=>!a.remindersSent.includes(k))||'2hr';showSmsContent(next,id);}
+async function sendNextReminder(id){
+  const a=appointments.find(x=>x.id===id);
+  const next=['booking','48hr','24hr','2hr','post'].find(k=>!a.remindersSent.includes(k));
+  if(next){
+    const newR=[...a.remindersSent,next];
+    const{error}=await db.from('appointments').update({reminders_sent:JSON.stringify(newR)}).eq('id',id);
+    if(!error){a.remindersSent=newR;renderDashboard();closeModal('appt-modal');showToast(`Reminder sent to ${a.fname} ${a.lname} ✓`,'success');}
+    else showToast('Error sending reminder');
+  }else{showToast('All reminders already sent');}
+}
+async function updateStatus(id,status){
+  const a=appointments.find(x=>x.id===id);
+  if(a){
+    const{error}=await db.from('appointments').update({status}).eq('id',id);
+    if(!error){a.status=status;renderDashboard();}
+    else showToast('Error updating status');
+  }
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');setTimeout(()=>{t.className='toast';},3000);}
+
+init();
+</script>
+</body>
+</html>
