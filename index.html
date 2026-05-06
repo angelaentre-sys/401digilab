@@ -254,7 +254,7 @@
 
   <div class="home-hero">
     <h1>Smart Appointment Booking<br>for <span>Every Clinic</span></h1>
-    <p>One platform. Multiple clinics. Each with their own booking page, patient dashboard, and automated notifications.</p>
+    <p>Run your clinic smarter. Give your patients an easy way to book online — while you stay in control of every appointment, from anywhere.</p>
     <div class="home-hero-btns">
       <a href="?clinic=mindcare" class="btn-hero-primary">🏥 Try Demo — MindCare →</a>
       <button class="btn-hero-outline" onclick="openModal('home-login-modal')">Clinic Login</button>
@@ -270,12 +270,12 @@
     <div class="feature-card">
       <div class="feature-icon">🏥</div>
       <div class="feature-title">Your Own Dashboard</div>
-      <div class="feature-desc">Log in and see only your clinic's appointments. Confirm, cancel, and track patient history in real-time.</div>
+      <div class="feature-desc">Log in and see your clinic's appointments only. Confirm, cancel, and track patient history in real time.</div>
     </div>
     <div class="feature-card">
       <div class="feature-icon">📲</div>
       <div class="feature-title">Patient Notifications</div>
-      <div class="feature-desc">Automatic SMS and email reminders sent to patients before their appointment. Fewer no-shows.</div>
+      <div class="feature-desc">Automatic SMS and email reminders sent to patients before their appointment. Fewer no-shows. More reminders mean more confirmed bookings — closing the gap between interest and a patient actually securing their slot.</div>
     </div>
   </div>
 
@@ -300,8 +300,50 @@
 
   <div class="home-cta-banner">
     <h2>Powered by 401 Digilab</h2>
-    <p>Built for Philippine clinics. Scaling globally.</p>
-    <p style="margin-top:16px">Want to add your clinic? <a href="mailto:luardojob@gmail.com">Contact us →</a></p>
+    <p>Built for the Philippines, scaling globally.</p>
+  </div>
+
+  <!-- INQUIRY FORM -->
+  <div style="background:#f0f4f8;padding:60px 24px">
+    <div style="max-width:560px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:28px">
+        <h2 style="font-size:22px;font-weight:700;color:#1f2937;margin-bottom:8px">Get Started with 401 Digilab</h2>
+        <p style="font-size:14px;color:#6b7280">Fill out the form below and we'll get back to you within 24 hours.</p>
+      </div>
+      <div style="background:white;border-radius:12px;padding:32px;box-shadow:0 4px 6px rgba(0,0,0,.07)">
+        <div id="inquiry-success" style="display:none;text-align:center;padding:24px 0">
+          <div style="font-size:48px;margin-bottom:12px">✅</div>
+          <div style="font-size:17px;font-weight:700;color:#0e7c3a;margin-bottom:6px">Inquiry Sent!</div>
+          <div style="font-size:13px;color:#6b7280">We'll be in touch within 24 hours.</div>
+        </div>
+        <form id="inquiry-form" onsubmit="submitInquiry(event)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Full Name *</label>
+              <input required type="text" id="inq-name" placeholder="Maria Santos" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Contact Number *</label>
+              <input required type="tel" id="inq-phone" placeholder="09XX XXX XXXX" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Email Address *</label>
+            <input required type="email" id="inq-email" placeholder="maria@yourclinic.com" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Clinic Name</label>
+            <input type="text" id="inq-clinic" placeholder="e.g. MindCare Psychiatric Clinic" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+          </div>
+          <div style="margin-bottom:20px">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Message / Inquiry *</label>
+            <textarea required id="inq-message" placeholder="Tell us about your clinic and what you need..." style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;resize:vertical;min-height:100px" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+          </div>
+          <button type="submit" id="inq-submit" style="width:100%;background:#1a56db;color:white;border:none;border-radius:6px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s" onmouseover="this.style.background='#1e3a8a'" onmouseout="this.style.background='#1a56db'">Send Inquiry →</button>
+          <p id="inq-error" style="display:none;color:#dc2626;font-size:12px;margin-top:8px;text-align:center">Please fill in all required fields.</p>
+        </form>
+      </div>
+    </div>
   </div>
 
   <div class="home-footer">
@@ -557,7 +599,7 @@ function renderServices(services){
     return;
   }
   grid.innerHTML=services.map((s,i)=>`
-    <div class="service-card" onclick="selectService(this,${JSON.stringify(s.name)},${s.duration})">
+    <div class="service-card" onclick="selectService(this,'${s.name}',${s.duration})">
       <div class="service-icon" style="background:${BG_COLORS[i%BG_COLORS.length]}">${s.icon||'🏥'}</div>
       <div><div class="service-name">${s.name}</div><div class="service-desc">${s.desc||''}</div></div>
       <div class="service-dur">${s.duration} min</div>
@@ -882,6 +924,31 @@ function showToast(msg,type=''){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}});
+
+// ── Inquiry Form ──────────────────────────────────────
+async function submitInquiry(e){
+  e.preventDefault();
+  const name=document.getElementById('inq-name').value.trim();
+  const phone=document.getElementById('inq-phone').value.trim();
+  const email=document.getElementById('inq-email').value.trim();
+  const clinic=document.getElementById('inq-clinic').value.trim();
+  const message=document.getElementById('inq-message').value.trim();
+  if(!name||!phone||!email||!message){
+    document.getElementById('inq-error').style.display='block';return;
+  }
+  document.getElementById('inq-error').style.display='none';
+  const btn=document.getElementById('inq-submit');
+  btn.textContent='Sending...';btn.disabled=true;
+  // Send via mailto as fallback (EmailJS can replace this later)
+  const subject=encodeURIComponent('401 Digilab Inquiry — '+(clinic||name));
+  const body=encodeURIComponent(`Name: ${name}\nPhone: ${phone}\nEmail: ${email}\nClinic: ${clinic||'Not specified'}\n\nMessage:\n${message}`);
+  window.location.href=`mailto:luardojob@gmail.com?subject=${subject}&body=${body}`;
+  setTimeout(()=>{
+    document.getElementById('inquiry-form').style.display='none';
+    document.getElementById('inquiry-success').style.display='block';
+    btn.textContent='Send Inquiry →';btn.disabled=false;
+  },500);
+}
 
 // ── Start ─────────────────────────────────────────────
 init();
