@@ -108,6 +108,7 @@
   .cal-nav { background: none; border: 1px solid var(--gray-border); border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 14px; color: var(--gray); }
   .cal-nav:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  #cal-days { display: contents; }
   .cal-day-name { text-align: center; font-size: 11px; font-weight: 600; color: var(--gray); padding: 4px 0; }
   .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all .15s; border: 2px solid transparent; }
   .cal-day:hover:not(.disabled):not(.empty) { background: var(--blue-light); color: var(--blue); }
@@ -378,7 +379,7 @@
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchView('patient')">Book Appointment</button>
-      <button class="nav-tab" onclick="switchView('clinic')">Clinic Portal</button>
+      <button class="nav-tab" onclick="switchView('clinic')">🔐 Staff Login</button>
     </div>
   </nav>
 
@@ -448,8 +449,13 @@
     <div class="clinic-login" id="clinic-login">
       <div class="login-card">
         <div class="login-icon">🏥</div>
-        <div class="login-title">Clinic Portal</div>
+        <div class="login-title">Clinic Staff Login</div>
         <div class="login-sub" id="login-sub-text">Sign in to manage your appointments</div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:11px;color:#1e40af;margin-bottom:14px;text-align:left">
+          <strong>Demo credentials:</strong><br>
+          Email: mindcare@clinic.com<br>
+          Password: MindCare2026!
+        </div>
         <div class="login-error" id="login-error">Incorrect email or password. Please try again.</div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="clinic-email" placeholder="clinic@email.com" onkeydown="if(event.key==='Enter')clinicLogin()"></div>
         <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="clinic-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')clinicLogin()"></div>
@@ -608,20 +614,25 @@ function renderServices(services){
 
 // ── After login: fetch clinic from profile ────────────
 async function handlePostLogin(user,showDashboard=true){
-  const{data:profile}=await db.from('profiles').select('clinic_id,clinics(id,name,slug,services)').eq('id',user.id).single();
-  if(profile){
-    dashboardClinicId=profile.clinic_id;
-    dashboardClinic=profile.clinics;
-    const cname=profile.clinics?.name||'Your Clinic';
-    const cslug=profile.clinics?.slug||'';
-    document.getElementById('dash-clinic-badge').textContent='🏥 '+cname;
-    document.getElementById('dash-booking-link').textContent=window.location.origin+'?clinic='+cslug;
-    await loadAppointments();
-    if(showDashboard){
-      document.getElementById('clinic-login').style.display='none';
-      document.getElementById('clinic-dashboard').style.display='block';
-      renderDashboard();
-    }
+  // Step 1: get profile (clinic_id)
+  const{data:profile}=await db.from('profiles').select('clinic_id,role').eq('id',user.id).single();
+  if(!profile||!profile.clinic_id){
+    console.error('No profile or clinic_id found for user');return;
+  }
+  dashboardClinicId=profile.clinic_id;
+  // Step 2: get clinic details separately (avoids FK join requirement)
+  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email').eq('id',profile.clinic_id).single();
+  dashboardClinic=clinic||{};
+  const cname=clinic?.name||'Your Clinic';
+  const cslug=clinic?.slug||'';
+  document.getElementById('dash-clinic-badge').textContent='🏥 '+cname;
+  document.getElementById('dash-booking-link').textContent=window.location.origin+'?clinic='+cslug;
+  await loadAppointments();
+  await seedDemoData();
+  if(showDashboard){
+    document.getElementById('clinic-login').style.display='none';
+    document.getElementById('clinic-dashboard').style.display='block';
+    renderDashboard();
   }
 }
 
@@ -700,14 +711,16 @@ async function homeClinicLogin(){
     document.getElementById('home-login-error').textContent='Incorrect email or password.';
     document.getElementById('home-login-error').style.display='block';
   }else{
-    // Fetch their clinic slug and redirect
-    const{data:profile}=await db.from('profiles').select('clinics(slug)').eq('id',data.user.id).single();
-    if(profile?.clinics?.slug){
-      window.location.href='?clinic='+profile.clinics.slug;
-    }else{
-      document.getElementById('home-login-error').textContent='No clinic found for this account. Contact admin.';
-      document.getElementById('home-login-error').style.display='block';
+    // Fetch profile then clinic separately (no FK join needed)
+    const{data:profile}=await db.from('profiles').select('clinic_id').eq('id',data.user.id).single();
+    if(profile?.clinic_id){
+      const{data:clinic}=await db.from('clinics').select('slug').eq('id',profile.clinic_id).single();
+      if(clinic?.slug){
+        window.location.href='?clinic='+clinic.slug;return;
+      }
     }
+    document.getElementById('home-login-error').textContent='No clinic found for this account. Contact admin.';
+    document.getElementById('home-login-error').style.display='block';
   }
 }
 
@@ -924,6 +937,33 @@ function showToast(msg,type=''){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}});
+
+// ── Seed demo data (runs after login if dashboard is empty) ──
+async function seedDemoData(){
+  if(!dashboardClinicId)return;
+  if(appointments.length>0)return; // already has data
+  const now=new Date();
+  const d=(offset)=>{const x=new Date(now);x.setDate(x.getDate()+offset);return x.toISOString().split('T')[0];};
+  const samples=[
+    {name:'Maria Santos',phone:'09171234567',email:'maria@email.com',service:'Initial Consultation',date:d(0),time:'09:00',duration:60,status:'confirmed',color:'#1a56db'},
+    {name:'Juan dela Cruz',phone:'09281234567',email:'juan@email.com',service:'Follow-up Session',date:d(0),time:'10:30',duration:45,status:'confirmed',color:'#0e7c3a'},
+    {name:'Ana Reyes',phone:'09351234567',email:'ana@email.com',service:'Medication Review',date:d(0),time:'14:00',duration:30,status:'pending',color:'#7c3aed'},
+    {name:'Carlo Mendoza',phone:'09461234567',email:'',service:'Family Therapy',date:d(1),time:'09:00',duration:60,status:'confirmed',color:'#d97706'},
+    {name:'Liza Ramos',phone:'09571234567',email:'liza@email.com',service:'Follow-up Session',date:d(1),time:'11:00',duration:45,status:'pending',color:'#0891b2'},
+    {name:'Mark Garcia',phone:'09181234567',email:'mark@email.com',service:'Initial Consultation',date:d(2),time:'13:00',duration:60,status:'confirmed',color:'#be185d'},
+    {name:'Jenny Flores',phone:'09291234567',email:'jenny@email.com',service:'Medication Review',date:d(3),time:'10:00',duration:30,status:'confirmed',color:'#065f46'},
+    {name:'Rico Villanueva',phone:'09391234567',email:'',service:'Follow-up Session',date:d(-1),time:'15:00',duration:45,status:'completed',color:'#1a56db'},
+    {name:'Sofia Torres',phone:'09491234567',email:'sofia@email.com',service:'Initial Consultation',date:d(-2),time:'09:30',duration:60,status:'completed',color:'#0e7c3a'},
+    {name:'Dennis Cruz',phone:'09591234567',email:'dennis@email.com',service:'Family Therapy',date:d(-3),time:'14:00',duration:60,status:'cancelled',color:'#dc2626'},
+  ];
+  for(const s of samples){
+    const{data:patient,error:pe}=await db.from('patients').insert({full_name:s.name,phone:s.phone,email:s.email||null,clinic_id:dashboardClinicId}).select().single();
+    if(pe){console.error('Seed patient error:',pe);continue;}
+    const[h,m]=s.time.split(':');
+    await db.from('appointments').insert({patient_id:patient.id,clinic_id:dashboardClinicId,service:s.service,appointment_date:s.date,appointment_time:s.time+':00',duration_minutes:s.duration,status:s.status,color:s.color,reminders_sent:s.status==='completed'?'["booking","48hr","24hr","2hr"]':'["booking"]'});
+  }
+  await loadAppointments();
+}
 
 // ── Inquiry Form ──────────────────────────────────────
 async function submitInquiry(e){
