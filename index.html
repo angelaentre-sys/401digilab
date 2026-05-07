@@ -269,6 +269,21 @@
   .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .admin-section-title{font-size:16px;font-weight:700;}
   .access-denied{text-align:center;padding:48px 24px;color:var(--gray);}
+  /* ── ANALYTICS ── */
+  .analytics-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .analytics-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; }
+  .analytics-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; color: var(--dark); display: flex; align-items: center; gap: 6px; }
+  .analytics-sub { font-size: 11px; color: var(--gray); font-weight: 400; margin-left: auto; }
+  .chart-wrap { position: relative; height: 190px; }
+  .donut-wrap { position: relative; height: 150px; }
+  .svc-bar-row { margin-bottom: 10px; }
+  .svc-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .svc-bar-track { background: var(--gray-border); border-radius: 4px; height: 6px; overflow: hidden; }
+  .svc-bar-fill { height: 6px; border-radius: 4px; transition: width .6s ease; }
+  .noshow-rate { text-align: center; padding: 8px 0 0; font-size: 12px; color: var(--gray); border-top: 1px solid var(--gray-border); margin-top: 10px; }
+  .noshow-rate strong { color: var(--red); font-size: 16px; display: block; margin-bottom: 2px; }
+  @media(max-width:700px){ .analytics-grid { grid-template-columns: 1fr; } }
+
   /* ── COLOR SWATCHES (brand picker) ── */
   .color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .color-swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .15s,border-color .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
@@ -524,6 +539,25 @@
           <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">⏳</div><div><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div></div></div>
           <div class="stat-card"><div class="stat-icon" style="background:#fee2e2">❌</div><div><div class="stat-value" id="stat-noshow">0</div><div class="stat-label">No-shows (week)</div></div></div>
         </div>
+        <!-- Analytics Section -->
+        <div class="analytics-grid" id="analytics-section" style="display:none">
+          <div class="analytics-card">
+            <div class="analytics-title">📈 Bookings — Last 7 Days <span class="analytics-sub" id="weekly-total-label"></span></div>
+            <div class="chart-wrap"><canvas id="chart-weekly"></canvas></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="analytics-card">
+              <div class="analytics-title">🏆 Top Services</div>
+              <div id="top-services-list"></div>
+            </div>
+            <div class="analytics-card">
+              <div class="analytics-title">📊 Status Breakdown</div>
+              <div class="donut-wrap"><canvas id="chart-status"></canvas></div>
+              <div class="noshow-rate"><strong id="noshow-pct">0%</strong>No-show rate</div>
+            </div>
+          </div>
+        </div>
+
         <div class="today-section"><div class="today-title">🌅 Today's Schedule <span id="today-count" class="badge badge-confirmed" style="font-size:11px"></span></div><div class="today-grid" id="today-grid"></div></div>
         <div class="table-card">
           <div class="table-header"><div class="table-title">All Appointments</div><input class="search-input" type="text" placeholder="🔍 Search patient..." oninput="filterTable(this.value)"></div>
@@ -669,6 +703,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── Supabase ──────────────────────────────────────────
@@ -1014,6 +1049,64 @@ function renderDashboard(){
   document.getElementById('today-count').textContent=todayAppts.length+' sessions';
   tg.innerHTML=todayAppts.length===0?'<div style="color:var(--gray);font-size:13px">No appointments scheduled for today.</div>':todayAppts.sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime)).map(a=>`<div class="today-appt" onclick="openAppt('${a.id}')"><div class="today-time">${fmtTime(a.dateTime)}</div><div class="today-name">${a.fname} ${a.lname}</div><div class="today-service">${a.service} · ${a.duration} min</div><div style="margin-top:6px">${statusBadge(a.status)}</div></div>`).join('');
   renderTable();
+  renderAnalytics();
+}
+
+// ── Analytics ─────────────────────────────────────────
+let chartWeekly=null,chartStatus=null;
+function renderAnalytics(){
+  if(!appointments.length){document.getElementById('analytics-section').style.display='none';return;}
+  document.getElementById('analytics-section').style.display='grid';
+
+  const brandColor=(getComputedStyle(document.documentElement).getPropertyValue('--blue')||'#1a56db').trim();
+
+  // ── Weekly bar chart (last 7 days) ────────────────
+  const days=[],counts=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    days.push(d.toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'}));
+    counts.push(appointments.filter(a=>new Date(a.dateTime).toDateString()===d.toDateString()).length);
+  }
+  const weekTotal=counts.reduce((s,n)=>s+n,0);
+  document.getElementById('weekly-total-label').textContent=weekTotal+' total';
+  if(chartWeekly){chartWeekly.destroy();chartWeekly=null;}
+  const ctx1=document.getElementById('chart-weekly').getContext('2d');
+  chartWeekly=new Chart(ctx1,{
+    type:'bar',
+    data:{labels:days,datasets:[{label:'Appointments',data:counts,backgroundColor:brandColor+'33',borderColor:brandColor,borderWidth:2,borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>i[0].label,label:i=>i.raw+' appointment'+(i.raw!==1?'s':'')}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,precision:0},grid:{color:'#f3f4f6'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  // ── Top services ──────────────────────────────────
+  const svcMap={};
+  appointments.forEach(a=>{if(a.service)svcMap[a.service]=(svcMap[a.service]||0)+1;});
+  const sorted=Object.entries(svcMap).sort((a,b)=>b[1]-a[1]);
+  const total=appointments.length;
+  document.getElementById('top-services-list').innerHTML=sorted.length===0
+    ?'<div style="color:var(--gray);font-size:12px;padding:8px 0">No data yet</div>'
+    :sorted.map(([name,count])=>{
+      const pct=Math.round((count/total)*100);
+      return`<div class="svc-bar-row">
+        <div class="svc-bar-label"><span style="font-weight:600;color:var(--dark)">${name}</span><span style="color:var(--gray)">${count} · ${pct}%</span></div>
+        <div class="svc-bar-track"><div class="svc-bar-fill" style="background:${brandColor};width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+
+  // ── Status donut ──────────────────────────────────
+  const statLabels=['Confirmed','Pending','Completed','Cancelled','No-show'];
+  const statKeys=['confirmed','pending','completed','cancelled','no-show'];
+  const statColors=['#0e7c3a','#d97706','#0891b2','#6b7280','#dc2626'];
+  const statCounts=statKeys.map(s=>appointments.filter(a=>a.status===s).length);
+  const noShowCount=appointments.filter(a=>a.status==='no-show').length;
+  const nsPct=total>0?Math.round((noShowCount/total)*100):0;
+  document.getElementById('noshow-pct').textContent=nsPct+'%';
+  if(chartStatus){chartStatus.destroy();chartStatus=null;}
+  const ctx2=document.getElementById('chart-status').getContext('2d');
+  chartStatus=new Chart(ctx2,{
+    type:'doughnut',
+    data:{labels:statLabels,datasets:[{data:statCounts,backgroundColor:statColors,borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:6,color:'#374151'}}},cutout:'60%'}
+  });
 }
 function renderTable(){
   const search=document.querySelector('.search-input')?document.querySelector('.search-input').value.toLowerCase():'';
