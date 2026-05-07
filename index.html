@@ -235,6 +235,40 @@
   .booking-link-url { font-weight: 600; font-size: 11px; word-break: break-all; }
   .copy-btn { background: var(--blue); color: white; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; font-family: inherit; }
   @media(max-width:700px){ .stats-grid{grid-template-columns:repeat(2,1fr);} .form-row{grid-template-columns:1fr;} .time-grid{grid-template-columns:repeat(2,1fr);} .home-features{grid-template-columns:1fr;} .how-steps{grid-template-columns:1fr;} .home-hero h1{font-size:28px;} }
+
+  /* ── ADMIN PANEL ── */
+  .admin-nav{background:#0f172a;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .admin-nav-logo{color:white;font-weight:800;font-size:16px;letter-spacing:-0.5px;}
+  .admin-nav-logo span{color:#60a5fa;}
+  .admin-badge{background:#1a56db;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
+  .admin-nav-right{display:flex;align-items:center;gap:14px;}
+  .admin-nav-email{color:rgba(255,255,255,0.55);font-size:12px;}
+  .admin-content{max-width:1100px;margin:0 auto;padding:28px 24px;}
+  .admin-page-header{margin-bottom:24px;}
+  .admin-page-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+  .admin-page-sub{font-size:13px;color:var(--gray);}
+  .admin-login-wrap{max-width:400px;margin:80px auto;padding:0 16px;}
+  .clinic-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px;}
+  .clinic-card{background:white;border-radius:10px;border:1px solid var(--gray-border);padding:20px;box-shadow:var(--shadow);}
+  .clinic-card-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .clinic-card-icon{width:42px;height:42px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:700;flex-shrink:0;}
+  .clinic-card-name{font-weight:700;font-size:14px;line-height:1.3;}
+  .clinic-card-email{font-size:11px;color:var(--gray);margin-top:2px;}
+  .clinic-card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-border);font-size:12px;}
+  .clinic-card-row:last-of-type{border-bottom:none;}
+  .clinic-card-key{color:var(--gray);}
+  .clinic-card-val{font-weight:600;text-align:right;}
+  .slug-tag{background:var(--blue-light);color:var(--blue);font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;font-family:monospace;}
+  .clinic-card-actions{display:flex;gap:8px;margin-top:14px;}
+  .setup-box{background:#f8fafc;border:1px solid var(--gray-border);border-radius:8px;padding:16px;margin-top:12px;}
+  .setup-box-title{font-size:12px;font-weight:700;margin-bottom:10px;color:var(--dark);}
+  .setup-sql{background:#1e293b;border-radius:6px;padding:12px;margin:8px 0;}
+  .setup-sql pre{color:#93c5fd;font-size:11px;white-space:pre-wrap;font-family:monospace;line-height:1.7;margin:0;}
+  .admin-add-btn{background:var(--blue);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;}
+  .admin-add-btn:hover{background:var(--blue-dark);}
+  .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .admin-section-title{font-size:16px;font-weight:700;}
+  .access-denied{text-align:center;padding:48px 24px;color:var(--gray);}
 </style>
 </head>
 <body>
@@ -537,6 +571,98 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: ADMIN PANEL
+═══════════════════════════════════════════════════════ -->
+<div id="page-admin" style="display:none">
+
+  <!-- Admin Login -->
+  <div id="admin-login-wrap">
+    <div class="admin-login-wrap">
+      <div class="login-card">
+        <div class="login-icon">🔐</div>
+        <div class="login-title">Admin Panel</div>
+        <div class="login-sub">401 Digilab Platform Management</div>
+        <div class="login-error" id="admin-login-error"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="admin-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="admin-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+        <button class="btn btn-primary" style="width:100%" id="admin-login-btn" onclick="adminLogin()">Sign In →</button>
+        <p style="font-size:12px;color:var(--gray);margin-top:12px;text-align:center">Staff login? <a href="?clinic=mindcare" style="color:var(--blue)">Go to clinic page</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="admin-dashboard-wrap" style="display:none">
+    <nav class="admin-nav">
+      <div>
+        <span class="admin-nav-logo">401 <span>Digilab</span></span>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="admin-nav-right">
+        <span class="admin-nav-email" id="admin-nav-email"></span>
+        <button class="btn btn-gray btn-sm" onclick="adminLogout()">Sign Out</button>
+      </div>
+    </nav>
+    <div class="admin-content">
+      <div class="admin-page-header">
+        <div class="admin-page-title">🏢 Platform Overview</div>
+        <div class="admin-page-sub">Manage all clinics on 401 Digilab</div>
+      </div>
+      <!-- Stats -->
+      <div class="stats-grid" style="margin-bottom:28px">
+        <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">🏥</div><div><div class="stat-value" id="admin-stat-clinics">0</div><div class="stat-label">Total Clinics</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#d1fae5">📅</div><div><div class="stat-value" id="admin-stat-bookings">0</div><div class="stat-label">Total Bookings</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">✅</div><div><div class="stat-value" id="admin-stat-active">0</div><div class="stat-label">Active Clinics</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#ede9fe">🔗</div><div><div class="stat-value" id="admin-stat-live">Live</div><div class="stat-label">Platform Status</div></div></div>
+      </div>
+      <!-- Clinics -->
+      <div class="admin-section-header">
+        <div class="admin-section-title">All Clinics</div>
+        <button class="admin-add-btn" onclick="openAddClinicModal()">➕ Add New Clinic</button>
+      </div>
+      <div class="clinic-card-grid" id="admin-clinic-grid">
+        <div style="color:var(--gray);font-size:13px;padding:20px">Loading clinics...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Clinic Modal -->
+<div class="modal-overlay" id="add-clinic-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">➕ Add New Clinic</div>
+      <button class="modal-close" onclick="closeModal('add-clinic-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="add-clinic-body">
+      <div class="form-group">
+        <label class="form-label">Clinic Name *</label>
+        <input class="form-input" type="text" id="new-clinic-name" placeholder="e.g. DentaCare Dental Clinic" oninput="autoSlug(this.value)">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Clinic Email *</label>
+          <input class="form-input" type="email" id="new-clinic-email" placeholder="clinic@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL Slug *</label>
+          <input class="form-input" type="text" id="new-clinic-slug" placeholder="dentacare" oninput="document.getElementById('slug-preview').textContent=this.value||'...'">
+          <div class="form-note">URL: ?clinic=<strong id="slug-preview">...</strong></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Owner Email <span style="color:var(--gray);font-weight:400">(optional)</span></label>
+        <input class="form-input" type="email" id="new-clinic-owner-email" placeholder="Defaults to clinic email if left blank">
+      </div>
+      <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--gray-border);margin-top:4px">
+        <button class="btn btn-gray btn-sm" onclick="closeModal('add-clinic-modal')">Cancel</button>
+        <button class="btn btn-primary" id="add-clinic-submit" onclick="submitAddClinic()">Add Clinic →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── Supabase ──────────────────────────────────────────
@@ -556,15 +682,26 @@ const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#f
 
 // ── Routing: called on page load ──────────────────────
 async function init(){
-  const slug=new URLSearchParams(window.location.search).get('clinic');
+  const params=new URLSearchParams(window.location.search);
+  const slug=params.get('clinic');
+  const isAdmin=params.has('admin');
+  // Admin route
+  if(isAdmin){
+    showPage('admin');
+    await initAdmin();
+    return;
+  }
   if(!slug){
-    // Check if already logged in → redirect to their clinic
+    // Check if already logged in → redirect to their clinic (or admin)
     const{data:{session}}=await db.auth.getSession();
     if(session){
-      const{data:profile}=await db.from('profiles').select('clinics(slug)').eq('id',session.user.id).single();
-      if(profile?.clinics?.slug){
-        window.location.href='?clinic='+profile.clinics.slug;
-        return;
+      if(session.user.email==='luardojob@gmail.com'){
+        window.location.href='?admin';return;
+      }
+      const{data:profile}=await db.from('profiles').select('clinic_id').eq('id',session.user.id).single();
+      if(profile?.clinic_id){
+        const{data:clinicData}=await db.from('clinics').select('slug').eq('id',profile.clinic_id).single();
+        if(clinicData?.slug){window.location.href='?clinic='+clinicData.slug;return;}
       }
     }
     showPage('home');
@@ -593,7 +730,7 @@ async function init(){
 }
 
 function showPage(name){
-  ['home','notfound','clinic'].forEach(p=>document.getElementById('page-'+p).style.display='none');
+  ['home','notfound','clinic','admin'].forEach(p=>document.getElementById('page-'+p).style.display='none');
   document.getElementById('page-'+name).style.display='block';
 }
 
@@ -674,6 +811,12 @@ async function saveBooking(){
   const{data:appt,error:ae}=await db.from('appointments').insert({patient_id:patient.id,clinic_id:clinicId,service:booking.service,appointment_date:dt.toISOString().split('T')[0],appointment_time:dt.toTimeString().split(' ')[0].slice(0,5),duration_minutes:booking.duration,status:'confirmed',notes:booking.reason||null,color,reminders_sent:'["booking"]'}).select().single();
   if(ae){showToast('Error saving appointment');console.error(ae);return;}
   appointments.unshift({id:appt.id,patientId:patient.id,fname:booking.fname,lname:booking.lname,phone:booking.phone,email:booking.email,service:booking.service,duration:booking.duration,dateTime:dt.toISOString(),status:'confirmed',remindersSent:['booking'],reason:booking.reason,color});
+  // Increment booking counter on clinic record
+  if(clinicId){
+    const newCount=(currentClinic?.total_bookings||0)+1;
+    await db.from('clinics').update({total_bookings:newCount}).eq('id',clinicId);
+    if(currentClinic)currentClinic.total_bookings=newCount;
+  }
   showToast('Appointment booked! ✓','success');
 }
 
@@ -937,6 +1080,174 @@ function showToast(msg,type=''){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}});
+
+// ── ADMIN PANEL ──────────────────────────────────────
+let adminClinics=[];
+
+async function initAdmin(){
+  const{data:{session}}=await db.auth.getSession();
+  if(session&&session.user.email==='luardojob@gmail.com'){
+    document.getElementById('admin-login-wrap').style.display='none';
+    document.getElementById('admin-dashboard-wrap').style.display='block';
+    document.getElementById('admin-nav-email').textContent=session.user.email;
+    await loadAdminData();
+  }
+}
+
+async function adminLogin(){
+  const email=document.getElementById('admin-email').value.trim();
+  const pass=document.getElementById('admin-pass').value;
+  const errEl=document.getElementById('admin-login-error');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Please enter your email and password.';errEl.style.display='block';return;}
+  const btn=document.getElementById('admin-login-btn');
+  btn.textContent='Signing in...';btn.disabled=true;
+  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Sign In →';btn.disabled=false;
+  if(error){errEl.textContent='Incorrect email or password.';errEl.style.display='block';return;}
+  if(data.user.email!=='luardojob@gmail.com'){
+    await db.auth.signOut();
+    errEl.textContent='Access denied. This panel is for platform admins only.';
+    errEl.style.display='block';return;
+  }
+  document.getElementById('admin-login-wrap').style.display='none';
+  document.getElementById('admin-dashboard-wrap').style.display='block';
+  document.getElementById('admin-nav-email').textContent=data.user.email;
+  await loadAdminData();
+}
+
+async function adminLogout(){
+  await db.auth.signOut();
+  document.getElementById('admin-dashboard-wrap').style.display='none';
+  document.getElementById('admin-login-wrap').style.display='block';
+  document.getElementById('admin-email').value='';
+  document.getElementById('admin-pass').value='';
+}
+
+async function loadAdminData(){
+  const{data:clinics}=await db.from('clinics').select('*').order('created_at',{ascending:false});
+  adminClinics=clinics||[];
+  renderAdminStats();
+  renderAdminClinics();
+}
+
+function renderAdminStats(){
+  document.getElementById('admin-stat-clinics').textContent=adminClinics.length;
+  document.getElementById('admin-stat-bookings').textContent=adminClinics.reduce((s,c)=>s+(c.total_bookings||0),0);
+  document.getElementById('admin-stat-active').textContent=adminClinics.filter(c=>c.slug).length;
+}
+
+function renderAdminClinics(){
+  const grid=document.getElementById('admin-clinic-grid');
+  if(!adminClinics.length){
+    grid.innerHTML='<div class="empty-state"><div class="empty-icon">🏥</div><div class="empty-text">No clinics yet. Add your first one!</div></div>';
+    return;
+  }
+  grid.innerHTML=adminClinics.map(c=>{
+    const created=new Date(c.created_at).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
+    const bookingUrl=window.location.origin+'?clinic='+c.slug;
+    return`<div class="clinic-card">
+      <div class="clinic-card-header">
+        <div class="clinic-card-icon">${c.name.charAt(0).toUpperCase()}</div>
+        <div><div class="clinic-card-name">${c.name}</div><div class="clinic-card-email">${c.owner_email||c.email||''}</div></div>
+      </div>
+      <div class="clinic-card-row"><span class="clinic-card-key">Slug</span><span class="slug-tag">${c.slug}</span></div>
+      <div class="clinic-card-row"><span class="clinic-card-key">Total Bookings</span><span class="clinic-card-val">${c.total_bookings||0}</span></div>
+      <div class="clinic-card-row"><span class="clinic-card-key">Added</span><span class="clinic-card-val">${created}</span></div>
+      <div class="clinic-card-row"><span class="clinic-card-key">Booking URL</span><span class="clinic-card-val" style="font-size:10px;color:var(--blue);max-width:160px;word-break:break-all;text-align:right">${bookingUrl}</span></div>
+      <div class="clinic-card-actions">
+        <a href="?clinic=${c.slug}" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none">View Page →</a>
+        <button class="btn btn-primary btn-sm" onclick="copyText('${bookingUrl}')">Copy Link</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function autoSlug(name){
+  const s=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  document.getElementById('new-clinic-slug').value=s;
+  document.getElementById('slug-preview').textContent=s||'...';
+}
+
+function openAddClinicModal(){
+  // Reset form
+  document.getElementById('add-clinic-body').innerHTML=`
+    <div class="form-group">
+      <label class="form-label">Clinic Name *</label>
+      <input class="form-input" type="text" id="new-clinic-name" placeholder="e.g. DentaCare Dental Clinic" oninput="autoSlug(this.value)">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Clinic Email *</label>
+        <input class="form-input" type="email" id="new-clinic-email" placeholder="clinic@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL Slug *</label>
+        <input class="form-input" type="text" id="new-clinic-slug" placeholder="dentacare" oninput="document.getElementById('slug-preview').textContent=this.value||'...'">
+        <div class="form-note">URL: ?clinic=<strong id="slug-preview">...</strong></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Owner Email <span style="color:var(--gray);font-weight:400">(optional)</span></label>
+      <input class="form-input" type="email" id="new-clinic-owner-email" placeholder="Defaults to clinic email if blank">
+    </div>
+    <div style="padding-top:16px;border-top:1px solid var(--gray-border);margin-top:4px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-gray btn-sm" onclick="closeModal('add-clinic-modal')">Cancel</button>
+      <button class="btn btn-primary" id="add-clinic-submit" onclick="submitAddClinic()">Add Clinic →</button>
+    </div>`;
+  openModal('add-clinic-modal');
+}
+
+async function submitAddClinic(){
+  const name=document.getElementById('new-clinic-name').value.trim();
+  const email=document.getElementById('new-clinic-email').value.trim();
+  const ownerEmail=document.getElementById('new-clinic-owner-email').value.trim();
+  const slug=document.getElementById('new-clinic-slug').value.trim();
+  if(!name||!email||!slug){showToast('Please fill in all required fields');return;}
+  const btn=document.getElementById('add-clinic-submit');
+  btn.textContent='Adding...';btn.disabled=true;
+  const defaultServices=[
+    {name:'Consultation',desc:'Initial patient consultation',duration:60,icon:'🌱'},
+    {name:'Follow-up',desc:'Follow-up visit and review',duration:30,icon:'🔄'},
+    {name:'Check-up',desc:'Routine check-up',duration:30,icon:'🩺'},
+  ];
+  const{data:clinic,error}=await db.from('clinics').insert({
+    name,email,owner_email:ownerEmail||email,slug,services:defaultServices,total_bookings:0
+  }).select().single();
+  btn.textContent='Add Clinic →';btn.disabled=false;
+  if(error){
+    if(error.code==='23505')showToast('That slug is already taken — try a different one');
+    else showToast('Error: '+error.message);
+    return;
+  }
+  // Show success + next steps SQL
+  document.getElementById('add-clinic-body').innerHTML=`
+    <div style="text-align:center;padding:8px 0 20px">
+      <div style="font-size:48px;margin-bottom:10px">✅</div>
+      <div style="font-weight:700;font-size:17px;color:var(--green)">Clinic Added!</div>
+      <div style="font-size:13px;color:var(--gray);margin-top:4px">${name} is now on the platform.</div>
+    </div>
+    <div class="setup-box">
+      <div class="setup-box-title">📋 Complete Setup — 2 more steps in Supabase:</div>
+      <p style="font-size:12px;color:var(--gray);margin-bottom:8px"><strong>Step 1:</strong> Go to <strong>Supabase → Authentication → Users → Add User</strong><br>Use email: <strong>${email}</strong> · Set a temporary password for the clinic.</p>
+      <p style="font-size:12px;color:var(--gray);margin-bottom:6px"><strong>Step 2:</strong> Copy the new user's UID, then run this SQL in Supabase SQL Editor:</p>
+      <div class="setup-sql"><pre>INSERT INTO profiles (id, clinic_id, role)
+VALUES (
+  'PASTE_USER_UID_HERE',
+  '${clinic.id}',
+  'admin'
+);</pre></div>
+      <button class="copy-btn" onclick="copyText(\`INSERT INTO profiles (id, clinic_id, role) VALUES ('PASTE_USER_UID_HERE', '${clinic.id}', 'admin');\`)">Copy SQL</button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+      <a href="?clinic=${slug}" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none">View Booking Page →</a>
+      <button class="btn btn-primary btn-sm" onclick="closeModal('add-clinic-modal');loadAdminData()">Done ✓</button>
+    </div>`;
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied! ✓','success'));
+}
 
 // ── Seed demo data (runs after login if dashboard is empty) ──
 async function seedDemoData(){
