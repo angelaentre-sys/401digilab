@@ -269,6 +269,12 @@
   .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .admin-section-title{font-size:16px;font-weight:700;}
   .access-denied{text-align:center;padding:48px 24px;color:var(--gray);}
+  /* ── COLOR SWATCHES (brand picker) ── */
+  .color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .color-swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .15s,border-color .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .color-swatch:hover{transform:scale(1.15);}
+  .color-swatch.selected{border-color:var(--dark);transform:scale(1.1);}
+  .brand-dot{width:14px;height:14px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle;border:2px solid rgba(0,0,0,.1);flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -680,6 +686,23 @@ let calYear,calMonth,appointments=[],activeFilter='all';
 const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
 const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#fce7f3','#e0f2fe'];
 
+// ── Brand color presets ───────────────────────────────
+const BRAND_THEMES=[
+  {hex:'#1a56db',light:'#ebf2ff',dark:'#1e3a8a',label:'Ocean Blue'},
+  {hex:'#0e7c3a',light:'#e6f4ec',dark:'#064e20',label:'Forest Green'},
+  {hex:'#7c3aed',light:'#ede9fe',dark:'#4c1d95',label:'Royal Purple'},
+  {hex:'#be185d',light:'#fce7f3',dark:'#831843',label:'Rose Pink'},
+  {hex:'#0891b2',light:'#e0f7fa',dark:'#164e63',label:'Teal'},
+  {hex:'#d97706',light:'#fef3c7',dark:'#92400e',label:'Amber Gold'},
+];
+function applyBrandColor(hex){
+  if(!hex)return;
+  const theme=BRAND_THEMES.find(t=>t.hex===hex)||{hex,light:'#ebf2ff',dark:'#1e3a8a'};
+  document.documentElement.style.setProperty('--blue',theme.hex);
+  document.documentElement.style.setProperty('--blue-light',theme.light);
+  document.documentElement.style.setProperty('--blue-dark',theme.dark);
+}
+
 // ── Routing: called on page load ──────────────────────
 async function init(){
   const params=new URLSearchParams(window.location.search);
@@ -711,6 +734,8 @@ async function init(){
   const{data:clinic,error}=await db.from('clinics').select('*').eq('slug',slug).single();
   if(!clinic||error){showPage('notfound');return;}
   currentClinic=clinic;
+  // Apply clinic brand color
+  applyBrandColor(clinic.brand_color||'#1a56db');
   // Update nav + page
   document.getElementById('clinic-nav-icon').textContent=clinic.name.charAt(0);
   document.getElementById('clinic-nav-name').textContent=clinic.name;
@@ -1146,18 +1171,21 @@ function renderAdminClinics(){
   grid.innerHTML=adminClinics.map(c=>{
     const created=new Date(c.created_at).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
     const bookingUrl=window.location.origin+'?clinic='+c.slug;
+    const brandHex=c.brand_color||'#1a56db';
+    const theme=BRAND_THEMES.find(t=>t.hex===brandHex)||{label:'Custom'};
     return`<div class="clinic-card">
       <div class="clinic-card-header">
-        <div class="clinic-card-icon">${c.name.charAt(0).toUpperCase()}</div>
+        <div class="clinic-card-icon" style="background:${brandHex}">${c.name.charAt(0).toUpperCase()}</div>
         <div><div class="clinic-card-name">${c.name}</div><div class="clinic-card-email">${c.owner_email||c.email||''}</div></div>
       </div>
       <div class="clinic-card-row"><span class="clinic-card-key">Slug</span><span class="slug-tag">${c.slug}</span></div>
+      <div class="clinic-card-row"><span class="clinic-card-key">Brand Color</span><span class="clinic-card-val" style="display:flex;align-items:center;gap:6px"><span class="brand-dot" style="background:${brandHex}"></span>${theme.label}</span></div>
       <div class="clinic-card-row"><span class="clinic-card-key">Total Bookings</span><span class="clinic-card-val">${c.total_bookings||0}</span></div>
       <div class="clinic-card-row"><span class="clinic-card-key">Added</span><span class="clinic-card-val">${created}</span></div>
       <div class="clinic-card-row"><span class="clinic-card-key">Booking URL</span><span class="clinic-card-val" style="font-size:10px;color:var(--blue);max-width:160px;word-break:break-all;text-align:right">${bookingUrl}</span></div>
       <div class="clinic-card-actions">
         <a href="?clinic=${c.slug}" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none">View Page →</a>
-        <button class="btn btn-primary btn-sm" onclick="copyText('${bookingUrl}')">Copy Link</button>
+        <button class="btn btn-primary btn-sm" style="background:${brandHex}" onclick="copyText('${bookingUrl}')">Copy Link</button>
       </div>
     </div>`;
   }).join('');
@@ -1167,6 +1195,15 @@ function autoSlug(name){
   const s=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
   document.getElementById('new-clinic-slug').value=s;
   document.getElementById('slug-preview').textContent=s||'...';
+}
+
+function selectBrandColor(el,hex){
+  document.querySelectorAll('#brand-color-swatches .color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('new-clinic-brand-color').value=hex;
+  const theme=BRAND_THEMES.find(t=>t.hex===hex);
+  const lbl=document.getElementById('brand-color-label');
+  if(lbl)lbl.textContent='Selected: '+(theme?theme.label:hex);
 }
 
 function openAddClinicModal(){
@@ -1191,6 +1228,14 @@ function openAddClinicModal(){
       <label class="form-label">Owner Email <span style="color:var(--gray);font-weight:400">(optional)</span></label>
       <input class="form-input" type="email" id="new-clinic-owner-email" placeholder="Defaults to clinic email if blank">
     </div>
+    <div class="form-group">
+      <label class="form-label">Brand Color</label>
+      <div class="color-swatches" id="brand-color-swatches">
+        ${BRAND_THEMES.map((t,i)=>`<div class="color-swatch${i===0?' selected':''}" style="background:${t.hex}" title="${t.label}" onclick="selectBrandColor(this,'${t.hex}')"></div>`).join('')}
+      </div>
+      <input type="hidden" id="new-clinic-brand-color" value="#1a56db">
+      <div class="form-note" id="brand-color-label">Selected: Ocean Blue</div>
+    </div>
     <div style="padding-top:16px;border-top:1px solid var(--gray-border);margin-top:4px;display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-gray btn-sm" onclick="closeModal('add-clinic-modal')">Cancel</button>
       <button class="btn btn-primary" id="add-clinic-submit" onclick="submitAddClinic()">Add Clinic →</button>
@@ -1203,6 +1248,7 @@ async function submitAddClinic(){
   const email=document.getElementById('new-clinic-email').value.trim();
   const ownerEmail=document.getElementById('new-clinic-owner-email').value.trim();
   const slug=document.getElementById('new-clinic-slug').value.trim();
+  const brandColor=document.getElementById('new-clinic-brand-color')?.value||'#1a56db';
   if(!name||!email||!slug){showToast('Please fill in all required fields');return;}
   const btn=document.getElementById('add-clinic-submit');
   btn.textContent='Adding...';btn.disabled=true;
@@ -1212,7 +1258,7 @@ async function submitAddClinic(){
     {name:'Check-up',desc:'Routine check-up',duration:30,icon:'🩺'},
   ];
   const{data:clinic,error}=await db.from('clinics').insert({
-    name,email,owner_email:ownerEmail||email,slug,services:defaultServices,total_bookings:0
+    name,email,owner_email:ownerEmail||email,slug,services:defaultServices,total_bookings:0,brand_color:brandColor
   }).select().single();
   btn.textContent='Add Clinic →';btn.disabled=false;
   if(error){
