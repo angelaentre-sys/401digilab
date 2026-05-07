@@ -234,7 +234,94 @@
   .booking-link-box { background: var(--blue-light); border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .booking-link-url { font-weight: 600; font-size: 11px; word-break: break-all; }
   .copy-btn { background: var(--blue); color: white; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; font-family: inherit; }
-  @media(max-width:700px){ .stats-grid{grid-template-columns:repeat(2,1fr);} .form-row{grid-template-columns:1fr;} .time-grid{grid-template-columns:repeat(2,1fr);} .home-features{grid-template-columns:1fr;} .how-steps{grid-template-columns:1fr;} .home-hero h1{font-size:28px;} }
+  /* ══════════════════════════════════════════
+     MOBILE RESPONSIVE  (≤ 700px)
+  ══════════════════════════════════════════ */
+  @media(max-width:700px){
+
+    /* ── Homepage ── */
+    .home-nav { padding: 0 16px; }
+    .home-nav-logo { font-size: 16px; }
+    .btn-nav { padding: 7px 12px; font-size: 12px; }
+    .home-hero { padding: 60px 16px 80px; }
+    .home-hero h1 { font-size: 26px; }
+    .home-hero p { font-size: 14px; }
+    .home-hero-btns { flex-direction: column; align-items: stretch; padding: 0 8px; }
+    .btn-hero-primary, .btn-hero-outline { justify-content: center; }
+    .home-features { grid-template-columns: 1fr; margin-top: -32px; }
+    .how-steps { grid-template-columns: 1fr; }
+    .home-cta-banner { padding: 40px 16px; }
+    .home-cta-banner h2 { font-size: 22px; }
+    .home-footer { flex-direction: column; gap: 4px; text-align: center; }
+
+    /* ── Clinic nav tabs ── */
+    .clinic-nav { padding: 0 12px; height: 56px; }
+    .nav-logo-text { font-size: 14px; }
+    .nav-logo-sub { display: none; }
+    .nav-tabs { gap: 2px; padding: 3px; }
+    .nav-tab { padding: 6px 10px; font-size: 12px; }
+
+    /* ── Booking flow ── */
+    .booking-hero { padding: 32px 16px 64px; }
+    .booking-hero h1 { font-size: 22px; }
+    .booking-hero p { font-size: 13px; }
+    .booking-container { padding: 0 12px; margin-top: -40px; }
+    .step-content { padding: 20px 16px 18px; }
+    .step-label { display: none; }
+    .form-row { grid-template-columns: 1fr; }
+    .time-grid { grid-template-columns: repeat(2, 1fr); }
+    .step-actions { flex-direction: row; gap: 10px; }
+    .step-actions .btn { flex: 1; }
+
+    /* ── Dashboard ── */
+    .dashboard { padding: 14px 12px; }
+    .dash-header { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+    .dash-header > div:last-child { width: 100%; flex-direction: column; align-items: stretch; }
+    .booking-link-box { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .dash-title { font-size: 18px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat-card { padding: 14px 12px; gap: 10px; }
+    .stat-icon { width: 36px; height: 36px; font-size: 16px; }
+    .stat-value { font-size: 20px; }
+    .stat-label { font-size: 11px; }
+    .today-grid { grid-template-columns: 1fr 1fr; }
+    .table-header { flex-direction: column; align-items: flex-start; }
+    .search-input { width: 100%; }
+    /* Hide less-critical table columns on mobile */
+    table th:nth-child(5), table td:nth-child(5) { display: none; }
+    table th:nth-child(3), table td:nth-child(3) { display: none; }
+    .patient-name { font-size: 12px; }
+    .patient-phone { font-size: 10px; }
+
+    /* ── Analytics ── */
+    .analytics-grid { grid-template-columns: 1fr; }
+    .chart-wrap { height: 160px; }
+    .donut-wrap { height: 140px; }
+
+    /* ── Login card ── */
+    .clinic-login { margin: 32px auto; padding: 0 14px; }
+    .login-card { padding: 28px 20px; }
+
+    /* ── Modals ── */
+    .modal { max-height: 85vh; border-radius: 12px 12px 0 0; }
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal-body { padding: 16px 18px; }
+    .modal-header { padding: 16px 18px 12px; }
+    .modal-footer { padding: 12px 18px; }
+
+    /* ── Toast ── */
+    .toast { left: 12px; right: 12px; bottom: 16px; max-width: 100%; text-align: center; }
+
+    /* ── Admin panel ── */
+    .admin-content { padding: 16px 14px; }
+    .admin-nav { padding: 0 14px; }
+    .admin-nav-email { display: none; }
+    .clinic-card-grid { grid-template-columns: 1fr; }
+    .admin-page-title { font-size: 17px; }
+
+    /* ── Misc ── */
+    .step-actions .btn-gray { flex: 0 0 auto; min-width: 80px; }
+  }
 
   /* ── ADMIN PANEL ── */
   .admin-nav{background:#0f172a;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
