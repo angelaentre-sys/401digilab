@@ -792,11 +792,36 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // ── Supabase ──────────────────────────────────────────
 const SUPA_URL='https://oruasilbgcenyhkmijcb.supabase.co';
 const SUPA_KEY='sb_publishable_BOmn3tzOO1RG3G2YD-WlFw_mG_BsGas';
 const db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+
+// ── EmailJS ───────────────────────────────────────────
+const EJS_SERVICE='service_ca4n3ei';
+const EJS_TEMPLATE='template_aasfqbs';
+const EJS_KEY='0pAG8uThsg3C0PTdr';
+emailjs.init(EJS_KEY);
+
+async function sendBookingEmail(params){
+  if(!params.patient_email){return;} // skip if no email provided
+  try{
+    await emailjs.send(EJS_SERVICE,EJS_TEMPLATE,{
+      clinic_name: params.clinic_name,
+      patient_name: params.patient_name,
+      patient_email: params.patient_email,
+      service: params.service,
+      date: params.date,
+      time: params.time,
+      duration: params.duration,
+    });
+    console.log('Confirmation email sent ✓');
+  }catch(err){
+    console.warn('EmailJS error (non-blocking):', err);
+  }
+}
 
 // ── State ─────────────────────────────────────────────
 let currentClinic=null;       // loaded from ?clinic=slug (booking context)
@@ -963,6 +988,19 @@ async function saveBooking(){
     const newCount=(currentClinic?.total_bookings||0)+1;
     await db.from('clinics').update({total_bookings:newCount}).eq('id',clinicId);
     if(currentClinic)currentClinic.total_bookings=newCount;
+  }
+  // Send booking confirmation email (non-blocking)
+  if(booking.email){
+    const dateStr=new Date(dt).toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    sendBookingEmail({
+      clinic_name: currentClinic?.name||'Our Clinic',
+      patient_name: booking.fname+' '+booking.lname,
+      patient_email: booking.email,
+      service: booking.service,
+      date: dateStr,
+      time: booking.time,
+      duration: booking.duration,
+    });
   }
   showToast('Appointment booked! ✓','success');
 }
