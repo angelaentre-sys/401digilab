@@ -571,16 +571,29 @@
           <div class="step-subtitle">We'll use this to send your appointment confirmation</div>
           <div class="form-row"><div class="form-group"><label class="form-label">First Name *</label><input class="form-input" type="text" id="p-fname" placeholder="Maria" oninput="checkStep4()"></div><div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" type="text" id="p-lname" placeholder="Santos" oninput="checkStep4()"></div></div>
           <div class="form-group"><label class="form-label">Mobile Number *</label><input class="form-input" type="tel" id="p-phone" placeholder="09XX XXX XXXX" oninput="checkStep4()"><div class="form-note">📱 We'll send SMS reminders before your appointment</div></div>
-          <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" type="email" id="p-email" placeholder="maria@email.com"><div class="form-note">Optional — for email confirmation</div></div>
+          <div class="form-group"><label class="form-label">Email Address *</label><input class="form-input" type="email" id="p-email" placeholder="maria@email.com" oninput="checkStep4()"><div class="form-note">📧 Your booking confirmation will be sent here</div></div>
           <div class="form-group"><label class="form-label">Brief Reason for Visit</label><textarea class="form-input" id="p-reason" placeholder="Optional — helps us prepare for your session..."></textarea><div class="form-note">🔒 This information is kept strictly confidential</div></div>
-          <div class="step-actions"><button class="btn btn-gray" onclick="prevStep(4)">← Back</button><button class="btn btn-primary" onclick="nextStep(4)" id="btn-step4" disabled>Review →</button></div>
+          <div class="step-actions"><button class="btn btn-gray" onclick="prevStep(4)">← Back</button><button class="btn btn-primary" onclick="nextStep(4)" id="btn-step4" disabled>Continue →</button></div>
         </div>
-        <!-- Step 5 — Confirm -->
+        <!-- Step 5 — Review & Confirm -->
         <div class="step-content" id="step-5">
-          <div class="confirm-header"><div class="confirm-icon">✅</div><div class="confirm-title">Appointment Confirmed!</div><div class="confirm-sub">Your booking has been received. Please save your details below.</div></div>
-          <div class="confirm-box" id="confirm-details"></div>
-          <div class="reminder-notice"><span>📲</span><span>You'll receive automatic reminders <strong>48 hours</strong>, <strong>24 hours</strong>, and <strong>2 hours</strong> before your appointment.</span></div>
-          <div class="step-actions" style="margin-top:20px"><button class="btn btn-outline" onclick="resetBooking()">Book Another</button></div>
+          <!-- Review view (shown first) -->
+          <div id="step5-review">
+            <div class="step-title">Review Your Booking</div>
+            <div class="step-subtitle">Please confirm your appointment details before submitting</div>
+            <div class="confirm-box" id="confirm-details"></div>
+            <div class="step-actions" style="margin-top:20px">
+              <button class="btn btn-gray" onclick="prevStep(5)">← Back</button>
+              <button class="btn btn-primary" id="btn-confirm-booking" onclick="confirmAndBook()">Confirm Booking →</button>
+            </div>
+          </div>
+          <!-- Success view (shown after confirmation) -->
+          <div id="step5-success" style="display:none">
+            <div class="confirm-header"><div class="confirm-icon">✅</div><div class="confirm-title">Appointment Confirmed!</div><div class="confirm-sub">Your booking has been received. Please save your details below.</div></div>
+            <div class="confirm-box" id="confirm-details-success"></div>
+            <div class="reminder-notice"><span>📲</span><span>You'll receive automatic reminders <strong>48 hours</strong>, <strong>24 hours</strong>, and <strong>2 hours</strong> before your appointment.</span></div>
+            <div class="step-actions" style="margin-top:20px"><button class="btn btn-outline" onclick="resetBooking()">Book Another</button></div>
+          </div>
         </div>
       </div>
     </div>
@@ -803,7 +816,7 @@ const db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 const EJS_SERVICE='service_ca4n3ei';
 const EJS_TEMPLATE='template_aasfqbs';
 const EJS_KEY='0pAG8uThsg3C0PTdr';
-emailjs.init(EJS_KEY);
+emailjs.init({publicKey: EJS_KEY});
 
 async function sendBookingEmail(params){
   if(!params.patient_email){return;} // skip if no email provided
@@ -1088,12 +1101,17 @@ function selectService(card,name,dur){
 }
 function nextStep(from){
   if(from===4){
-    const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim();
-    if(!fn||!ln||!ph)return;
+    const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim(),em=document.getElementById('p-email').value.trim();
+    if(!fn||!ln||!ph||!em)return;
     booking.fname=fn;booking.lname=ln;booking.phone=ph;
-    booking.email=document.getElementById('p-email').value.trim();
+    booking.email=em;
     booking.reason=document.getElementById('p-reason').value.trim();
-    buildConfirmation();saveBooking();
+    // Show review screen (not success yet)
+    document.getElementById('step5-review').style.display='';
+    document.getElementById('step5-success').style.display='none';
+    document.getElementById('btn-confirm-booking').disabled=false;
+    document.getElementById('btn-confirm-booking').textContent='Confirm Booking →';
+    buildConfirmation();
   }
   goToStep(from+1);
 }
@@ -1109,21 +1127,32 @@ function goToStep(s){
   currentStep=s;
 }
 function checkStep4(){
-  const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim();
-  document.getElementById('btn-step4').disabled=!(fn&&ln&&ph);
+  const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim(),em=document.getElementById('p-email').value.trim();
+  document.getElementById('btn-step4').disabled=!(fn&&ln&&ph&&em);
 }
 function buildConfirmation(){
   const d=new Date(booking.date);
   const dateStr=d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const clinicName=currentClinic?.name||'the clinic';
-  document.getElementById('confirm-details').innerHTML=`
+  const html=`
     <div class="confirm-row"><span class="confirm-label">Clinic</span><span class="confirm-value">${clinicName}</span></div>
     <div class="confirm-row"><span class="confirm-label">Patient</span><span class="confirm-value">${booking.fname} ${booking.lname}</span></div>
     <div class="confirm-row"><span class="confirm-label">Service</span><span class="confirm-value">${booking.service}</span></div>
     <div class="confirm-row"><span class="confirm-label">Date</span><span class="confirm-value">${dateStr}</span></div>
     <div class="confirm-row"><span class="confirm-label">Time</span><span class="confirm-value">${booking.time}</span></div>
     <div class="confirm-row"><span class="confirm-label">Duration</span><span class="confirm-value">${booking.duration} minutes</span></div>
-    <div class="confirm-row"><span class="confirm-label">Contact</span><span class="confirm-value">${booking.phone}</span></div>`;
+    <div class="confirm-row"><span class="confirm-label">Contact</span><span class="confirm-value">${booking.phone}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Email</span><span class="confirm-value">${booking.email}</span></div>`;
+  document.getElementById('confirm-details').innerHTML=html;
+  document.getElementById('confirm-details-success').innerHTML=html;
+}
+async function confirmAndBook(){
+  const btn=document.getElementById('btn-confirm-booking');
+  btn.disabled=true;btn.textContent='Booking...';
+  await saveBooking();
+  // Switch from review to success within step 5
+  document.getElementById('step5-review').style.display='none';
+  document.getElementById('step5-success').style.display='';
 }
 function resetBooking(){
   booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:''};
