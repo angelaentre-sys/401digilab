@@ -203,9 +203,9 @@
   .reminder-label { font-size: 13px; font-weight: 600; }
   .reminder-time { font-size: 11px; color: var(--gray); }
   .reminder-preview-btn { font-size: 11px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; text-decoration: underline; }
-  .sms-preview { background: #1c1c1e; border-radius: 12px; padding: 16px; margin-top: 10px; }
-  .sms-bubble { background: #2c6bed; color: white; border-radius: 16px 16px 4px 16px; padding: 10px 14px; font-size: 13px; line-height: 1.5; max-width: 85%; margin-left: auto; }
-  .sms-label { font-size: 10px; color: #8e8e93; text-align: right; margin-top: 4px; }
+  .sms-preview { background: #f9fafb; border: 1px solid var(--gray-border); border-radius: 10px; padding: 16px; margin-top: 10px; }
+  .sms-bubble { background: white; border: 1px solid var(--gray-border); border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.65; color: var(--dark); }
+  .sms-label { font-size: 10px; color: var(--gray); text-align: right; margin-top: 8px; }
   .section-label { font-size: 12px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; margin-top: 18px; }
   .section-label:first-child { margin-top: 0; }
   .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-border); font-size: 13px; }
@@ -390,17 +390,17 @@
   <nav class="home-nav">
     <div class="home-nav-logo">401 <span>Digilab</span></div>
     <div class="home-nav-right">
-      <button class="btn-nav btn-nav-ghost" onclick="openModal('home-login-modal')">Clinic Login</button>
+      <button class="btn-nav btn-nav-ghost" onclick="document.getElementById('home-login-section').scrollIntoView({behavior:'smooth'})">Clinic Login</button>
       <a href="?clinic=mindcare" class="btn-nav btn-nav-primary">Try Demo →</a>
     </div>
   </nav>
 
   <div class="home-hero">
-    <h1>Smart Appointment Booking<br>for <span>Every Clinic</span></h1>
-    <p>Run your clinic smarter. Give your patients an easy way to book online — while you stay in control of every appointment, from anywhere.</p>
+    <h1>Smart Appointment Booking<br>for <span>Every Business</span></h1>
+    <p>Give your customers an easy way to book online while you stay in full control of every appointment. No calls, no confusion, no missed bookings.</p>
     <div class="home-hero-btns">
       <a href="?clinic=mindcare" class="btn-hero-primary">🏥 Try Demo — MindCare →</a>
-      <button class="btn-hero-outline" onclick="openModal('home-login-modal')">Clinic Login</button>
+      <button class="btn-hero-outline" onclick="document.getElementById('home-login-section').scrollIntoView({behavior:'smooth'})">Clinic Login</button>
     </div>
   </div>
 
@@ -444,6 +444,36 @@
   <div class="home-cta-banner">
     <h2>Powered by 401 Digilab</h2>
     <p>Built for the Philippines, scaling globally.</p>
+  </div>
+
+  <!-- ── LOGIN SECTION (F1 + F2) ── -->
+  <div id="home-login-section" style="background:white;padding:60px 24px;border-top:1px solid #e5e7eb">
+    <div style="max-width:460px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="display:inline-block;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:12px;letter-spacing:.8px">CLIENT PORTAL</div>
+        <h2 style="font-size:22px;font-weight:700;color:#1f2937;margin-bottom:6px">Log in to your account</h2>
+        <p style="font-size:14px;color:#6b7280">Clinic owners and admins sign in here to manage appointments.</p>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;background:#f1f5f9;border-radius:8px;padding:3px;margin-bottom:20px">
+        <button id="section-tab-clinic" onclick="switchLoginTab('clinic','section')" style="flex:1;padding:9px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:white;color:#1a56db;box-shadow:0 1px 3px rgba(0,0,0,.1);font-family:inherit;transition:all .15s">🏥 Clinic Login</button>
+        <button id="section-tab-admin" onclick="switchLoginTab('admin','section')" style="flex:1;padding:9px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:none;color:#6b7280;font-family:inherit;transition:all .15s">🔐 Admin Login</button>
+      </div>
+      <!-- Clinic panel -->
+      <div id="section-panel-clinic" style="background:#f9fafb;border-radius:10px;padding:24px">
+        <div id="section-login-error" style="display:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:10px;font-size:13px;margin-bottom:12px"></div>
+        <div style="margin-bottom:14px"><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Email</label><input type="email" id="section-clinic-email" placeholder="clinic@email.com" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'" onkeydown="if(event.key==='Enter')sectionClinicLogin()"></div>
+        <div style="margin-bottom:16px"><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Password</label><input type="password" id="section-clinic-pass" placeholder="Enter password" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'" onkeydown="if(event.key==='Enter')sectionClinicLogin()"></div>
+        <button id="section-login-btn" onclick="sectionClinicLogin()" style="width:100%;background:#1a56db;color:white;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Sign In →</button>
+      </div>
+      <!-- Admin panel -->
+      <div id="section-panel-admin" style="display:none;background:#f9fafb;border-radius:10px;padding:24px">
+        <div id="section-admin-error" style="display:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:10px;font-size:13px;margin-bottom:12px"></div>
+        <div style="margin-bottom:14px"><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Admin Email</label><input type="email" id="section-admin-email" placeholder="admin@401digilab.com" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'" onkeydown="if(event.key==='Enter')sectionAdminLogin()"></div>
+        <div style="margin-bottom:16px"><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Password</label><input type="password" id="section-admin-pass" placeholder="Enter password" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'" onkeydown="if(event.key==='Enter')sectionAdminLogin()"></div>
+        <button id="section-admin-btn" onclick="sectionAdminLogin()" style="width:100%;background:#0f172a;color:white;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Admin Sign In →</button>
+      </div>
+    </div>
   </div>
 
   <!-- CLINIC APPLICATION FORM -->
@@ -528,6 +558,54 @@
     </div>
   </div>
 
+  <!-- CONTACT FORM (A3) -->
+  <div style="background:#f0f4f8;padding:60px 24px;border-top:1px solid #e5e7eb" id="contact-section">
+    <div style="max-width:620px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="display:inline-block;background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:12px;letter-spacing:.8px">GET IN TOUCH</div>
+        <h2 style="font-size:22px;font-weight:700;color:#1f2937;margin-bottom:8px">Have a question?</h2>
+        <p style="font-size:14px;color:#6b7280">Send us a message and we'll get back to you within 24 hours.</p>
+      </div>
+      <div style="background:white;border-radius:12px;padding:32px;box-shadow:0 4px 6px rgba(0,0,0,.07)">
+        <!-- Success -->
+        <div id="contact-success" style="display:none;text-align:center;padding:16px 0">
+          <div style="font-size:44px;margin-bottom:10px">📬</div>
+          <div style="font-size:17px;font-weight:700;color:#0e7c3a;margin-bottom:6px">Message Sent!</div>
+          <div style="font-size:13px;color:#6b7280">Thanks! We'll get back to you within 24 hours.</div>
+        </div>
+        <!-- Form -->
+        <form id="contact-form" onsubmit="submitContactForm(event)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Full Name *</label>
+              <input required type="text" id="contact-name" placeholder="Maria Santos" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Phone Number *</label>
+              <input required type="tel" id="contact-phone" placeholder="09XX XXX XXXX" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Email Address *</label>
+              <input required type="email" id="contact-email" placeholder="maria@email.com" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Clinic / Business Name</label>
+              <input type="text" id="contact-business" placeholder="Optional" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+          </div>
+          <div style="margin-bottom:20px">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">Message *</label>
+            <textarea required id="contact-message" placeholder="What would you like to know?" style="width:100%;border:1.5px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;resize:vertical;min-height:90px;box-sizing:border-box" onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+          </div>
+          <button type="submit" id="contact-submit" style="width:100%;background:#1a56db;color:white;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit" onmouseover="this.style.background='#1e3a8a'" onmouseout="this.style.background='#1a56db'">Send Message →</button>
+          <p id="contact-error" style="display:none;color:#dc2626;font-size:12px;margin-top:8px;text-align:center">Something went wrong. Please try again.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="home-footer">
     <span>© 2026 401 Digilab. All rights reserved.</span>
     <span>Built with ❤️ for clinic owners</span>
@@ -560,7 +638,7 @@
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchView('patient')">Book Appointment</button>
-      <button class="nav-tab" onclick="switchView('clinic')">🔐 Staff Login</button>
+      <button class="nav-tab" id="staff-login-tab" onclick="switchView('clinic')" style="display:none">🔐 Staff Login</button>
     </div>
   </nav>
 
@@ -614,12 +692,15 @@
           <div class="form-group" id="professional-group" style="display:none"><label class="form-label">Attending Professional *</label><select class="form-input" id="p-professional" oninput="checkStep4()"><option value="">Select a professional...</option></select></div>
           <div class="form-group">
             <label class="form-label">Payment Method *</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">
               <label id="pay-gcash-label" style="display:flex;align-items:center;gap:10px;border:2px solid var(--gray-border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;background:white">
                 <input type="radio" name="payment" value="gcash" id="pay-gcash" style="accent-color:var(--blue)" onchange="booking.payment_method='gcash';highlightPayment();checkStep4()"> <span style="font-size:14px">💳 GCash</span>
               </label>
               <label id="pay-cash-label" style="display:flex;align-items:center;gap:10px;border:2px solid var(--blue);background:var(--blue-light);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s">
-                <input type="radio" name="payment" value="cash" id="pay-cash" checked style="accent-color:var(--blue)" onchange="booking.payment_method='cash';highlightPayment();checkStep4()"> <span style="font-size:14px">💵 Cash at Clinic</span>
+                <input type="radio" name="payment" value="cash" id="pay-cash" checked style="accent-color:var(--blue)" onchange="booking.payment_method='cash';highlightPayment();checkStep4()"> <span style="font-size:14px">💵 Cash</span>
+              </label>
+              <label id="pay-others-label" style="display:flex;align-items:center;gap:10px;border:2px solid var(--gray-border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;background:white">
+                <input type="radio" name="payment" value="others" id="pay-others" style="accent-color:var(--blue)" onchange="booking.payment_method='others';highlightPayment();checkStep4()"> <span style="font-size:14px">🔧 Others</span>
               </label>
             </div>
           </div>
@@ -642,11 +723,17 @@
           <div id="step5-success" style="display:none">
             <div class="confirm-header"><div class="confirm-icon">✅</div><div class="confirm-title">Appointment Confirmed!</div><div class="confirm-sub">Your booking has been received. Please save your details below.</div></div>
             <div class="confirm-box" id="confirm-details-success"></div>
-            <div class="reminder-notice"><span>📲</span><span>You'll receive automatic reminders <strong>24 hours</strong> and <strong>1 hour</strong> before your appointment.</span></div>
-            <div class="step-actions" style="margin-top:20px"><button class="btn btn-outline" onclick="resetBooking()">Book Another</button></div>
+            <div class="reminder-notice"><span>📧</span><span>You'll receive an automatic reminder <strong>1 hour</strong> before your appointment.</span></div>
+            <div class="step-actions" style="margin-top:20px;justify-content:center;gap:12px">
+              <button class="btn btn-gray" onclick="resetBooking()">← Back</button>
+              <button class="btn btn-outline" onclick="resetBooking()">📅 Book Another Appointment</button>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+    <div style="text-align:center;padding:12px 16px 28px">
+      <a href="/" style="font-size:12px;color:var(--gray);text-decoration:none;display:inline-flex;align-items:center;gap:5px;opacity:.7;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">← Go back to 401 Digilab Homepage</a>
     </div>
   </div>
 
@@ -741,15 +828,30 @@
 <div class="modal-overlay" id="home-login-modal">
   <div class="modal" style="max-width:420px">
     <div class="modal-header">
-      <div class="modal-title">🏥 Clinic Login — 401 Digilab</div>
+      <div class="modal-title">Login — 401 Digilab</div>
       <button class="modal-close" onclick="closeModal('home-login-modal')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="login-error" id="home-login-error">Incorrect email or password.</div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="home-clinic-email" placeholder="clinic@email.com" onkeydown="if(event.key==='Enter')homeClinicLogin()"></div>
-      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="home-clinic-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')homeClinicLogin()"></div>
-      <button class="btn btn-primary" style="width:100%;margin-top:4px" id="home-login-btn" onclick="homeClinicLogin()">Sign In →</button>
-      <p style="font-size:12px;color:var(--gray);margin-top:12px;text-align:center">Don't have a clinic account? <a href="mailto:luardojob@gmail.com" style="color:var(--blue)">Contact us</a></p>
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;background:#f1f5f9;border-radius:8px;padding:3px;margin-bottom:18px">
+        <button id="modal-tab-clinic" onclick="switchLoginTab('clinic','modal')" style="flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:white;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1);font-family:inherit">🏥 Clinic Login</button>
+        <button id="modal-tab-admin" onclick="switchLoginTab('admin','modal')" style="flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:none;color:var(--gray);font-family:inherit">🔐 Admin Login</button>
+      </div>
+      <!-- Clinic panel -->
+      <div id="modal-panel-clinic">
+        <div class="login-error" id="home-login-error">Incorrect email or password.</div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="home-clinic-email" placeholder="clinic@email.com" onkeydown="if(event.key==='Enter')homeClinicLogin()"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="home-clinic-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')homeClinicLogin()"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" id="home-login-btn" onclick="homeClinicLogin()">Sign In →</button>
+        <p style="font-size:12px;color:var(--gray);margin-top:12px;text-align:center">Don't have an account? <a href="mailto:luardojob@gmail.com" style="color:var(--blue)">Contact us</a></p>
+      </div>
+      <!-- Admin panel -->
+      <div id="modal-panel-admin" style="display:none">
+        <div class="login-error" id="modal-admin-error">Incorrect email or password.</div>
+        <div class="form-group"><label class="form-label">Admin Email</label><input class="form-input" type="email" id="modal-admin-email" placeholder="admin@401digilab.com" onkeydown="if(event.key==='Enter')modalAdminLogin()"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="modal-admin-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')modalAdminLogin()"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px;background:#0f172a" id="modal-admin-login-btn" onclick="modalAdminLogin()">Admin Sign In →</button>
+      </div>
     </div>
   </div>
 </div>
@@ -763,12 +865,12 @@
   </div>
 </div>
 
-<!-- SMS Preview Modal -->
+<!-- Email Preview Modal -->
 <div class="modal-overlay" id="sms-modal">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header"><div class="modal-title">📱 SMS Preview</div><button class="modal-close" onclick="closeModal('sms-modal')">✕</button></div>
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><div class="modal-title">📧 Email Preview</div><button class="modal-close" onclick="closeModal('sms-modal')">✕</button></div>
     <div class="modal-body" id="sms-content"></div>
-    <div class="modal-footer"><button class="btn btn-success btn-sm" onclick="closeModal('sms-modal');showToast('Reminder sent! ✓','success')">Send Now</button><button class="btn btn-gray btn-sm" onclick="closeModal('sms-modal')">Close</button></div>
+    <div class="modal-footer"><button class="btn btn-success btn-sm" id="send-reminder-confirm-btn">Send Email Now</button><button class="btn btn-gray btn-sm" onclick="closeModal('sms-modal')">Close</button></div>
   </div>
 </div>
 
@@ -939,6 +1041,9 @@ async function sendBookingEmail(params){
       date: params.date,
       time: params.time,
       duration: params.duration,
+      reminder_type: 'Booking Confirmation',
+      message_body: `Your appointment slot at ${params.clinic_name} is confirmed. You'll receive an automatic reminder 1 hour before your appointment. If you need to cancel or reschedule, please contact us as soon as possible.`,
+      clinic_phone: params.clinic_phone||'',
     });
     console.log('Confirmation email sent ✓');
   }catch(err){
@@ -1053,7 +1158,7 @@ async function handlePostLogin(user,showDashboard=true){
   }
   dashboardClinicId=profile.clinic_id;
   // Step 2: get clinic details separately (avoids FK join requirement)
-  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email').eq('id',profile.clinic_id).single();
+  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email,phone').eq('id',profile.clinic_id).single();
   dashboardClinic=clinic||{};
   const cname=clinic?.name||'Your Clinic';
   const cslug=clinic?.slug||'';
@@ -1073,7 +1178,7 @@ async function loadAppointments(){
   const clinicId=dashboardClinicId||currentClinic?.id;
   if(!clinicId)return;
   const{data,error}=await db.from('appointments')
-    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,attending_professional,patients(id,full_name,phone,email)`)
+    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,payment_status,attending_professional,patients(id,full_name,phone,email)`)
     .eq('clinic_id',clinicId)
     .order('appointment_date',{ascending:false});
   if(error){console.error(error);return;}
@@ -1088,7 +1193,7 @@ async function loadAppointments(){
     const fname=parts[0]||'Unknown';
     const lname=parts.slice(1).join(' ')||'';
     const dateStr=row.appointment_date+'T'+(row.appointment_time||'09:00:00');
-    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',professional:row.attending_professional||''};
+    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',paymentStatus:row.payment_status||'unpaid',professional:row.attending_professional||''};
   });
   if(dashboardClinicId)renderDashboard();
 }
@@ -1123,6 +1228,7 @@ async function saveBooking(){
       date: dateStr,
       time: booking.time,
       duration: booking.duration,
+      clinic_phone: currentClinic?.phone||'',
     });
   }
   showToast('Appointment booked! ✓','success');
@@ -1173,6 +1279,81 @@ async function homeClinicLogin(){
     document.getElementById('home-login-error').textContent='No clinic found for this account. Contact admin.';
     document.getElementById('home-login-error').style.display='block';
   }
+}
+
+// ── Homepage login tab switcher ───────────────────────
+function switchLoginTab(tab,context){
+  const pfx=context==='modal'?'modal':'section';
+  const cTab=document.getElementById(pfx+'-tab-clinic'),aTab=document.getElementById(pfx+'-tab-admin');
+  const cPanel=document.getElementById(pfx+'-panel-clinic'),aPanel=document.getElementById(pfx+'-panel-admin');
+  if(!cTab)return;
+  if(tab==='clinic'){
+    cTab.style.background='white';cTab.style.color='#1a56db';cTab.style.boxShadow='0 1px 3px rgba(0,0,0,.1)';
+    aTab.style.background='none';aTab.style.color='#6b7280';aTab.style.boxShadow='none';
+    cPanel.style.display='';aPanel.style.display='none';
+  }else{
+    aTab.style.background='white';aTab.style.color='#1a56db';aTab.style.boxShadow='0 1px 3px rgba(0,0,0,.1)';
+    cTab.style.background='none';cTab.style.color='#6b7280';cTab.style.boxShadow='none';
+    aPanel.style.display='';cPanel.style.display='none';
+  }
+}
+
+// ── Homepage section: clinic login ────────────────────
+async function sectionClinicLogin(){
+  const email=document.getElementById('section-clinic-email').value.trim();
+  const pass=document.getElementById('section-clinic-pass').value;
+  const errEl=document.getElementById('section-login-error');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Please enter your email and password.';errEl.style.display='block';return;}
+  const btn=document.getElementById('section-login-btn');
+  btn.textContent='Signing in...';btn.disabled=true;
+  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Sign In →';btn.disabled=false;
+  if(error){errEl.textContent='Incorrect email or password.';errEl.style.display='block';return;}
+  const{data:profile}=await db.from('profiles').select('clinic_id').eq('id',data.user.id).single();
+  if(profile?.clinic_id){
+    const{data:clinic}=await db.from('clinics').select('slug').eq('id',profile.clinic_id).single();
+    if(clinic?.slug){window.location.href='?clinic='+clinic.slug;return;}
+  }
+  errEl.textContent='No clinic found for this account. Contact admin.';errEl.style.display='block';
+}
+
+// ── Homepage section: admin login ─────────────────────
+async function sectionAdminLogin(){
+  const email=document.getElementById('section-admin-email').value.trim();
+  const pass=document.getElementById('section-admin-pass').value;
+  const errEl=document.getElementById('section-admin-error');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Please enter your email and password.';errEl.style.display='block';return;}
+  const btn=document.getElementById('section-admin-btn');
+  btn.textContent='Signing in...';btn.disabled=true;
+  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Admin Sign In →';btn.disabled=false;
+  if(error){errEl.textContent='Incorrect email or password.';errEl.style.display='block';return;}
+  if(data.user.email!=='luardojob@gmail.com'){
+    await db.auth.signOut();
+    errEl.textContent='Access denied. Admin accounts only.';errEl.style.display='block';return;
+  }
+  window.location.href='?admin';
+}
+
+// ── Modal admin login ─────────────────────────────────
+async function modalAdminLogin(){
+  const email=document.getElementById('modal-admin-email').value.trim();
+  const pass=document.getElementById('modal-admin-pass').value;
+  const errEl=document.getElementById('modal-admin-error');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Please enter your email and password.';errEl.style.display='block';return;}
+  const btn=document.getElementById('modal-admin-login-btn');
+  btn.textContent='Signing in...';btn.disabled=true;
+  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Admin Sign In →';btn.disabled=false;
+  if(error){errEl.textContent='Incorrect email or password.';errEl.style.display='block';return;}
+  if(data.user.email!=='luardojob@gmail.com'){
+    await db.auth.signOut();
+    errEl.textContent='Access denied. Admin accounts only.';errEl.style.display='block';return;
+  }
+  window.location.href='?admin';
 }
 
 async function clinicLogout(){
@@ -1239,7 +1420,7 @@ function goToStep(s){
   currentStep=s;
 }
 function populateStep4(){
-  const staff=currentClinic?.staff||[];
+  const staff=(currentClinic?.staff||[]).filter(s=>s.visible!==false);
   const proGroup=document.getElementById('professional-group');
   const proSel=document.getElementById('p-professional');
   if(staff.length>0&&proGroup&&proSel){
@@ -1249,10 +1430,11 @@ function populateStep4(){
   highlightPayment();checkStep4();
 }
 function highlightPayment(){
-  const g=document.getElementById('pay-gcash-label'),c=document.getElementById('pay-cash-label');
+  const g=document.getElementById('pay-gcash-label'),c=document.getElementById('pay-cash-label'),o=document.getElementById('pay-others-label');
   if(!g||!c)return;
-  if(booking.payment_method==='gcash'){g.style.borderColor='var(--blue)';g.style.background='var(--blue-light)';c.style.borderColor='var(--gray-border)';c.style.background='white';}
-  else{c.style.borderColor='var(--blue)';c.style.background='var(--blue-light)';g.style.borderColor='var(--gray-border)';g.style.background='white';}
+  [g,c,o].forEach(el=>{if(el){el.style.borderColor='var(--gray-border)';el.style.background='white';}});
+  const active=booking.payment_method==='gcash'?g:booking.payment_method==='others'?o:c;
+  if(active){active.style.borderColor='var(--blue)';active.style.background='var(--blue-light)';}
 }
 function checkStep4(){
   const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim(),em=document.getElementById('p-email').value.trim();
@@ -1264,7 +1446,7 @@ function buildConfirmation(){
   const d=new Date(booking.date);
   const dateStr=d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const clinicName=currentClinic?.name||'the clinic';
-  const payLabel=booking.payment_method==='gcash'?'💳 GCash':'💵 Cash at Clinic';
+  const payLabel=booking.payment_method==='gcash'?'💳 GCash':booking.payment_method==='others'?'🔧 Others':'💵 Cash at Clinic';
   const proRow=booking.professional?`<div class="confirm-row"><span class="confirm-label">Professional</span><span class="confirm-value">${booking.professional}</span></div>`:'';
   const html=`
     <div class="confirm-row"><span class="confirm-label">Clinic</span><span class="confirm-value">${clinicName}</span></div>
@@ -1381,7 +1563,28 @@ function renderStaffManager(){
   const staff=dashboardClinic?.staff||[];
   const el=document.getElementById('staff-manager-list');if(!el)return;
   if(!staff.length){el.innerHTML='<div style="padding:16px 20px;color:var(--gray);font-size:13px">No staff yet. Add team members so patients can choose their preferred professional.</div>';return;}
-  el.innerHTML=staff.map((s,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--gray-border)"><div style="width:36px;height:36px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--blue)">${s.name.charAt(0)}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${s.name}</div><div style="font-size:12px;color:var(--gray)">${s.role||'Staff'}</div></div><button class="btn btn-danger btn-sm" onclick="deleteStaff(${i})">Remove</button></div>`).join('');
+  el.innerHTML=staff.map((s,i)=>{
+    const visible=s.visible!==false;
+    return`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--gray-border);${!visible?'opacity:.55':''}">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--blue)">${s.name.charAt(0)}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${s.name}</div>
+        <div style="font-size:12px;color:var(--gray)">${s.role||'Staff'}</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray);cursor:pointer;white-space:nowrap">
+        <input type="checkbox" style="accent-color:var(--blue);cursor:pointer" ${visible?'checked':''} onchange="toggleStaffVisibility(${i},this.checked)">
+        Show to patients
+      </label>
+      <button class="btn btn-danger btn-sm" onclick="deleteStaff(${i})">Remove</button>
+    </div>`;
+  }).join('');
+}
+async function toggleStaffVisibility(idx,visible){
+  const staff=[...(dashboardClinic?.staff||[])];
+  staff[idx]={...staff[idx],visible};
+  const{error}=await db.from('clinics').update({staff}).eq('id',dashboardClinicId);
+  if(!error){dashboardClinic.staff=staff;renderStaffManager();showToast(visible?`${staff[idx].name} visible to patients ✓`:`${staff[idx].name} hidden from patients`,'success');}
+  else showToast('Error updating staff');
 }
 function openServiceModal(idx){
   const services=dashboardClinic?.services||[];
@@ -1512,7 +1715,7 @@ function renderTable(){
   const search=document.querySelector('.search-input')?document.querySelector('.search-input').value.toLowerCase():'';
   let filtered=appointments.filter(a=>(a.fname+' '+a.lname+' '+a.phone).toLowerCase().includes(search)&&(activeFilter==='all'||a.status===activeFilter)).sort((a,b)=>new Date(b.dateTime)-new Date(a.dateTime));
   if(!filtered.length){document.getElementById('appt-table-body').innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No appointments found</div></div></td></tr>';return;}
-  document.getElementById('appt-table-body').innerHTML=filtered.map(a=>`<tr><td><div class="patient-cell"><div class="patient-avatar" style="background:${a.color}">${a.fname[0]}${a.lname[0]}</div><div><div class="patient-name">${a.fname} ${a.lname}</div><div class="patient-phone">${a.phone}</div></div></div></td><td style="font-size:12px">${a.service}<br><span style="color:var(--gray)">${a.duration} min</span></td><td style="font-size:12px">${fmtDate(a.dateTime)}<br><span style="color:var(--gray)">${fmtTime(a.dateTime)}</span></td><td>${statusBadge(a.status)}</td><td><span style="font-size:12px;color:var(--gray)">${a.remindersSent.length} sent</span> <button class="reminder-preview-btn" onclick="showSmsPreview('${a.id}')">preview</button></td><td><button class="action-btn" onclick="openAppt('${a.id}')">View →</button></td></tr>`).join('');
+  document.getElementById('appt-table-body').innerHTML=filtered.map(a=>`<tr><td><div class="patient-cell"><div class="patient-avatar" style="background:${a.color}">${a.fname[0]}${a.lname[0]}</div><div><div class="patient-name">${a.fname} ${a.lname}</div><div class="patient-phone">${a.phone}</div></div></div></td><td style="font-size:12px">${a.service}<br><span style="color:var(--gray)">${a.duration} min</span></td><td style="font-size:12px">${fmtDate(a.dateTime)}<br><span style="color:var(--gray)">${fmtTime(a.dateTime)}</span></td><td>${statusBadge(a.status)}</td><td><span style="font-size:12px;color:var(--gray)">${a.remindersSent.length} sent</span> <button class="reminder-preview-btn" onclick="showSmsPreview('${a.id}')">email</button></td><td><button class="action-btn" onclick="openAppt('${a.id}')">View →</button></td></tr>`).join('');
 }
 function filterTable(v){renderTable();}
 function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
@@ -1525,10 +1728,10 @@ function openAppt(id){
   const a=appointments.find(x=>x.id===id);if(!a)return;
   const cname=dashboardClinic?.name||currentClinic?.name||'Clinic';
   const reminders=[
-    {key:'booking',label:'Booking Confirmation',when:'At time of booking',msg:`Hi ${a.fname}! Your appointment at ${cname} is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or CANCEL. See you! 🌿`},
-    {key:'24hr',label:'24-Hour Reminder',when:'1 day before',msg:`Hi ${a.fname}, your appointment at ${cname} is tomorrow at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. See you soon! 💙`},
-    {key:'1hr',label:'1-Hour Reminder',when:'1 hour before',msg:`Hi ${a.fname}, your appointment at ${cname} starts in 1 hour at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. See you soon! 🌿`},
-    {key:'post',label:'Post-Session Follow-up',when:'After session',msg:`Hi ${a.fname}, thank you for visiting ${cname}! Would you like to book your next appointment? Reply YES or call us. 🙏`},
+    {key:'booking',label:'Booking Confirmation',when:'At time of booking',auto:true},
+    {key:'1hr',label:'1-Hour Reminder',when:'1 hour before appointment',auto:true},
+    {key:'24hr',label:'24-Hour Reminder',when:'1 day before — manual send only',auto:false},
+    {key:'post',label:'Post-Session Follow-up',when:'After session — manual send only',auto:false},
   ];
   document.getElementById('modal-content').innerHTML=`
     <div class="section-label">Patient Information</div>
@@ -1545,38 +1748,97 @@ function openAppt(id){
       <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${fmtDate(a.dateTime)}</span></div>
       <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">${fmtTime(a.dateTime)}</span></div>
       <div class="detail-row"><span class="detail-key">Duration</span><span class="detail-val">${a.duration} minutes</span></div>
-      <div class="detail-row"><span class="detail-key">Payment</span><span class="detail-val">${a.paymentMethod==='gcash'?'💳 GCash':'💵 Cash at Clinic'}</span></div>
+      <div class="detail-row"><span class="detail-key">Payment</span><span class="detail-val">${a.paymentMethod==='gcash'?'💳 GCash':a.paymentMethod==='others'?'🔧 Others':'💵 Cash at Clinic'}</span></div>
+      <div class="detail-row"><span class="detail-key">Payment Status</span><span class="detail-val" id="pay-status-${a.id}">${paymentBadge(a.paymentStatus)}</span></div>
       <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">${statusBadge(a.status)}</span></div>
     </div>
     <div class="section-label">Reminder Timeline</div>
-    <div class="reminder-timeline">${reminders.map(r=>{const sent=a.remindersSent.includes(r.key);return`<div class="reminder-item"><div class="reminder-dot ${sent?'sent':'pending'}">${sent?'✓':'○'}</div><div style="flex:1"><div class="reminder-label">${r.label}</div><div class="reminder-time">${r.when} · ${sent?'<span style="color:var(--green)">Sent ✓</span>':'<span style="color:var(--amber)">Pending</span>'}</div><button class="reminder-preview-btn" onclick="showSmsContent('${r.key}','${id}')">Preview message</button></div></div>`;}).join('')}</div>`;
-  document.getElementById('modal-footer').innerHTML=a.status!=='completed'&&a.status!=='cancelled'?`<button class="btn btn-success btn-sm" onclick="updateStatus('${id}','confirmed');closeModal('appt-modal');showToast('Marked as confirmed ✓','success')">✅ Confirm</button><button class="btn btn-outline btn-sm" onclick="sendNextReminder('${id}')">📲 Send Reminder</button><button class="btn btn-danger btn-sm" onclick="updateStatus('${id}','cancelled');closeModal('appt-modal');showToast('Appointment cancelled')">Cancel</button>`:`<button class="btn btn-gray btn-sm" onclick="closeModal('appt-modal')">Close</button>`;
+    <div class="reminder-timeline">${reminders.map(r=>{const sent=a.remindersSent.includes(r.key);return`<div class="reminder-item"><div class="reminder-dot ${sent?'sent':'pending'}">${sent?'✓':'○'}</div><div style="flex:1"><div class="reminder-label">${r.label}${r.auto?'<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:10px;margin-left:6px;font-weight:600">AUTO</span>':''}</div><div class="reminder-time">${r.when} · ${sent?'<span style="color:var(--green)">Sent ✓</span>':'<span style="color:var(--amber)">Pending</span>'}</div><button class="reminder-preview-btn" onclick="showSmsContent('${r.key}','${id}')">Preview &amp; Send</button></div></div>`;}).join('')}</div>`;
+  const isActive=a.status!=='completed'&&a.status!=='cancelled';
+  document.getElementById('modal-footer').innerHTML=isActive?`
+    <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="updatePaymentStatus('${id}','unpaid');closeModal('appt-modal')">💰 Not Yet Paid</button>
+    <button class="btn btn-success btn-sm" onclick="updatePaymentStatus('${id}','paid');closeModal('appt-modal')">✅ Paid</button>
+    <button class="btn btn-outline btn-sm" onclick="sendNextReminder('${id}')">📧 Send Reminder</button>
+    <button class="btn btn-danger btn-sm" onclick="updateStatus('${id}','cancelled');closeModal('appt-modal');showToast('Appointment cancelled')">❌ Cancel</button>`
+  :`<button class="btn btn-gray btn-sm" onclick="closeModal('appt-modal')">Close</button>`;
   document.getElementById('appt-modal').classList.add('open');
 }
 function showSmsContent(key,id){
   const a=appointments.find(x=>x.id===id);
   const cname=dashboardClinic?.name||currentClinic?.name||'Clinic';
   const msgs={
-    booking:`Hi ${a.fname}! Your appointment at ${cname} is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or CANCEL. See you! 🌿`,
-    '24hr':`Hi ${a.fname}, your appointment at ${cname} is tomorrow at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. 💙`,
-    '1hr':`Hi ${a.fname}, your appointment at ${cname} starts in 1 hour at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. 🌿`,
-    post:`Hi ${a.fname}, thank you for visiting ${cname}! Book your next appointment? Reply YES or call us. 🙏`
+    booking:`Hi ${a.fname}! Your appointment at ${cname} is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. See you soon! 🌿`,
+    '24hr':`Hi ${a.fname}, a reminder that your appointment at ${cname} is tomorrow at ${fmtTime(a.dateTime)}. Please reply to confirm or reschedule. 💙`,
+    '1hr':`Hi ${a.fname}, your appointment at ${cname} starts in 1 hour (${fmtTime(a.dateTime)}). Please arrive 5 minutes early. See you soon! 🌿`,
+    post:`Hi ${a.fname}, thank you for visiting ${cname}! We hope your session went well. Would you like to book your next appointment? 🙏`
   };
   const labels={booking:'Booking Confirmation','24hr':'24-Hour Reminder','1hr':'1-Hour Reminder',post:'Post-Session Follow-up'};
-  document.getElementById('sms-content').innerHTML=`<p style="font-size:13px;color:var(--gray);margin-bottom:12px">Message for <strong>${a.fname} ${a.lname}</strong> — <strong>${labels[key]}</strong>:</p><div class="sms-preview"><div class="sms-bubble">${msgs[key]}</div><div class="sms-label">${cname} · ${new Date().toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'})}</div></div>`;
+  document.getElementById('sms-content').innerHTML=`
+    <p style="font-size:13px;color:var(--gray);margin-bottom:12px">Email preview for <strong>${a.fname} ${a.lname}</strong> (${a.email||'no email on file'})</p>
+    <div style="font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${labels[key]}</div>
+    <div class="sms-preview">
+      <div style="font-size:11px;color:var(--gray);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--gray-border)"><strong>From:</strong> ${cname} &nbsp;|&nbsp; <strong>To:</strong> ${a.email||'—'}</div>
+      <div class="sms-bubble">${msgs[key].replace(/\n/g,'<br>')}</div>
+      <div class="sms-label">Sent via 401 Digilab · ${cname}</div>
+    </div>`;
+  // Wire the "Send Email Now" button to actually send
+  const sendBtn=document.getElementById('send-reminder-confirm-btn');
+  if(sendBtn){
+    sendBtn.onclick=async()=>{
+      sendBtn.textContent='Sending...';sendBtn.disabled=true;
+      await sendReminderEmail(key,id);
+      sendBtn.textContent='Send Email Now';sendBtn.disabled=false;
+      closeModal('sms-modal');
+    };
+    sendBtn.style.display=a.email?'':'none';
+  }
   document.getElementById('appt-modal').classList.remove('open');
   document.getElementById('sms-modal').classList.add('open');
 }
 function showSmsPreview(id){const a=appointments.find(x=>x.id===id);const next=['booking','24hr','1hr','post'].find(k=>!a.remindersSent.includes(k))||'post';showSmsContent(next,id);}
+async function sendReminderEmail(key,id){
+  const a=appointments.find(x=>x.id===id);
+  if(!a||!a.email){showToast('No email on file for this patient');return;}
+  const cname=dashboardClinic?.name||currentClinic?.name||'Clinic';
+  const msgs={
+    booking:`Hi ${a.fname}! Your appointment at ${cname} is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. See you soon! 🌿`,
+    '24hr':`Hi ${a.fname}, a reminder that your appointment at ${cname} is tomorrow at ${fmtTime(a.dateTime)}. Please reply to confirm or reschedule. 💙`,
+    '1hr':`Hi ${a.fname}, your appointment at ${cname} starts in 1 hour (${fmtTime(a.dateTime)}). Please arrive 5 minutes early. See you soon! 🌿`,
+    post:`Hi ${a.fname}, thank you for visiting ${cname}! We hope your session went well. Would you like to book your next appointment? 🙏`
+  };
+  const labels={booking:'Booking Confirmation','24hr':'24-Hour Reminder','1hr':'1-Hour Reminder',post:'Post-Session Follow-up'};
+  try{
+    await emailjs.send(EJS_SERVICE,EJS_TEMPLATE,{
+      clinic_name:cname,
+      patient_name:a.fname+' '+a.lname,
+      patient_email:a.email,
+      service:a.service,
+      date:fmtDate(a.dateTime),
+      time:fmtTime(a.dateTime),
+      duration:a.duration,
+      reminder_type:labels[key]||key,
+      message_body:msgs[key]||'',
+      clinic_phone:dashboardClinic?.phone||currentClinic?.phone||'',
+    });
+    // Mark as sent in DB
+    const newR=[...a.remindersSent];
+    if(!newR.includes(key))newR.push(key);
+    await db.from('appointments').update({reminders_sent:JSON.stringify(newR)}).eq('id',id);
+    a.remindersSent=newR;
+    renderDashboard();
+    showToast(`${labels[key]||'Reminder'} sent to ${a.fname} ✓`,'success');
+  }catch(err){
+    console.warn('EmailJS reminder error:',err);
+    showToast('Failed to send email. Check EmailJS settings.');
+  }
+}
 async function sendNextReminder(id){
   const a=appointments.find(x=>x.id===id);
   const next=['booking','24hr','1hr','post'].find(k=>!a.remindersSent.includes(k));
-  if(next){
-    const newR=[...a.remindersSent,next];
-    const{error}=await db.from('appointments').update({reminders_sent:JSON.stringify(newR)}).eq('id',id);
-    if(!error){a.remindersSent=newR;renderDashboard();closeModal('appt-modal');showToast(`Reminder sent to ${a.fname} ${a.lname} ✓`,'success');}
-    else showToast('Error sending reminder');
-  }else{showToast('All reminders already sent');}
+  if(!next){showToast('All reminders already sent');return;}
+  if(!a.email){showToast('No email on file — cannot send reminder');return;}
+  closeModal('appt-modal');
+  showSmsContent(next,id); // show preview first so staff can review before sending
 }
 async function updateStatus(id,status){
   const a=appointments.find(x=>x.id===id);
@@ -1584,6 +1846,21 @@ async function updateStatus(id,status){
     const{error}=await db.from('appointments').update({status}).eq('id',id);
     if(!error){a.status=status;renderDashboard();}
     else showToast('Error updating status');
+  }
+}
+function paymentBadge(s){
+  if(s==='paid')return'<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px">✅ Paid</span>';
+  return'<span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px">⏳ Unpaid</span>';
+}
+async function updatePaymentStatus(id,status){
+  const a=appointments.find(x=>x.id===id);
+  if(a){
+    const{error}=await db.from('appointments').update({payment_status:status}).eq('id',id);
+    if(!error){
+      a.paymentStatus=status;
+      renderDashboard();
+      showToast(status==='paid'?'Marked as Paid ✓':'Marked as Unpaid','success');
+    }else showToast('Error updating payment status');
   }
 }
 
@@ -1956,6 +2233,33 @@ async function submitApplication(e){
   document.getElementById('apply-success-email').textContent=email;
   document.getElementById('apply-form').style.display='none';
   document.getElementById('apply-success').style.display='block';
+}
+
+// ── Contact Form (A3) ─────────────────────────────────
+async function submitContactForm(e){
+  e.preventDefault();
+  const fullName=document.getElementById('contact-name').value.trim();
+  const phone=document.getElementById('contact-phone').value.trim();
+  const email=document.getElementById('contact-email').value.trim();
+  const business=document.getElementById('contact-business').value.trim();
+  const message=document.getElementById('contact-message').value.trim();
+  if(!fullName||!phone||!email||!message){
+    document.getElementById('contact-error').textContent='Please fill in all required fields.';
+    document.getElementById('contact-error').style.display='block';return;
+  }
+  document.getElementById('contact-error').style.display='none';
+  const btn=document.getElementById('contact-submit');
+  btn.textContent='Sending...';btn.disabled=true;
+  const{error}=await db.from('contact_messages').insert({
+    full_name:fullName,phone,email,business_name:business||null,message
+  });
+  btn.textContent='Send Message →';btn.disabled=false;
+  if(error){
+    document.getElementById('contact-error').textContent='Something went wrong. Please try again.';
+    document.getElementById('contact-error').style.display='block';return;
+  }
+  document.getElementById('contact-form').style.display='none';
+  document.getElementById('contact-success').style.display='block';
 }
 
 // ── Start ─────────────────────────────────────────────
