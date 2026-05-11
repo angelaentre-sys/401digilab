@@ -611,6 +611,18 @@
           <div class="form-row"><div class="form-group"><label class="form-label">First Name *</label><input class="form-input" type="text" id="p-fname" placeholder="Maria" oninput="checkStep4()"></div><div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" type="text" id="p-lname" placeholder="Santos" oninput="checkStep4()"></div></div>
           <div class="form-group"><label class="form-label">Mobile Number *</label><input class="form-input" type="tel" id="p-phone" placeholder="09XX XXX XXXX" oninput="checkStep4()"><div class="form-note">📱 We'll send SMS reminders before your appointment</div></div>
           <div class="form-group"><label class="form-label">Email Address *</label><input class="form-input" type="email" id="p-email" placeholder="maria@email.com" oninput="checkStep4()"><div class="form-note">📧 Your booking confirmation will be sent here</div></div>
+          <div class="form-group" id="professional-group" style="display:none"><label class="form-label">Attending Professional *</label><select class="form-input" id="p-professional" oninput="checkStep4()"><option value="">Select a professional...</option></select></div>
+          <div class="form-group">
+            <label class="form-label">Payment Method *</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+              <label id="pay-gcash-label" style="display:flex;align-items:center;gap:10px;border:2px solid var(--gray-border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;background:white">
+                <input type="radio" name="payment" value="gcash" id="pay-gcash" style="accent-color:var(--blue)" onchange="booking.payment_method='gcash';highlightPayment();checkStep4()"> <span style="font-size:14px">💳 GCash</span>
+              </label>
+              <label id="pay-cash-label" style="display:flex;align-items:center;gap:10px;border:2px solid var(--blue);background:var(--blue-light);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s">
+                <input type="radio" name="payment" value="cash" id="pay-cash" checked style="accent-color:var(--blue)" onchange="booking.payment_method='cash';highlightPayment();checkStep4()"> <span style="font-size:14px">💵 Cash at Clinic</span>
+              </label>
+            </div>
+          </div>
           <div class="form-group"><label class="form-label">Brief Reason for Visit</label><textarea class="form-input" id="p-reason" placeholder="Optional — helps us prepare for your session..."></textarea><div class="form-note">🔒 This information is kept strictly confidential</div></div>
           <div class="step-actions"><button class="btn btn-gray" onclick="prevStep(4)">← Back</button><button class="btn btn-primary" onclick="nextStep(4)" id="btn-step4" disabled>Continue →</button></div>
         </div>
@@ -708,6 +720,16 @@
             <button class="filter-btn" onclick="setFilter('completed',this)">✔ Completed</button>
           </div></div>
           <div style="overflow-x:auto"><table><thead><tr><th>Patient</th><th>Service</th><th>Date & Time</th><th>Status</th><th>Reminders</th><th>Actions</th></tr></thead><tbody id="appt-table-body"></tbody></table></div>
+        </div>
+        <!-- Services Manager -->
+        <div class="table-card" style="margin-top:16px">
+          <div class="table-header"><div class="table-title">📋 Manage Services</div><button class="btn btn-outline btn-sm" onclick="openServiceModal(-1)">+ Add Service</button></div>
+          <div id="services-manager-list"></div>
+        </div>
+        <!-- Staff Manager -->
+        <div class="table-card" style="margin-top:16px;margin-bottom:24px">
+          <div class="table-header"><div class="table-title">👥 Staff / Professionals</div><button class="btn btn-outline btn-sm" onclick="openStaffModal()">+ Add Staff</button></div>
+          <div id="staff-manager-list"></div>
         </div>
       </div>
     </div>
@@ -849,6 +871,20 @@
   </div>
 </div>
 
+<!-- Service Modal -->
+<div class="modal-overlay" id="service-modal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header"><div class="modal-title" id="service-modal-title">Add Service</div><button class="modal-close" onclick="closeModal('service-modal')">✕</button></div>
+    <div class="modal-body" id="service-modal-body"></div>
+  </div>
+</div>
+<!-- Staff Modal -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><div class="modal-title">Add Staff Member</div><button class="modal-close" onclick="closeModal('staff-modal')">✕</button></div>
+    <div class="modal-body" id="staff-modal-body"></div>
+  </div>
+</div>
 <!-- Approval Setup Modal -->
 <div class="modal-overlay" id="approval-modal">
   <div class="modal" style="max-width:560px">
@@ -915,7 +951,7 @@ let currentClinic=null;       // loaded from ?clinic=slug (booking context)
 let dashboardClinicId=null;   // set after clinic login (dashboard context)
 let dashboardClinic=null;     // full clinic object after login
 let currentStep=1;
-let booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:''};
+let booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:'',payment_method:'cash',professional:''};
 let calYear,calMonth,appointments=[],activeFilter='all';
 const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
 const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#fce7f3','#e0f2fe'];
@@ -1037,7 +1073,7 @@ async function loadAppointments(){
   const clinicId=dashboardClinicId||currentClinic?.id;
   if(!clinicId)return;
   const{data,error}=await db.from('appointments')
-    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,patients(id,full_name,phone,email)`)
+    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,attending_professional,patients(id,full_name,phone,email)`)
     .eq('clinic_id',clinicId)
     .order('appointment_date',{ascending:false});
   if(error){console.error(error);return;}
@@ -1052,7 +1088,7 @@ async function loadAppointments(){
     const fname=parts[0]||'Unknown';
     const lname=parts.slice(1).join(' ')||'';
     const dateStr=row.appointment_date+'T'+(row.appointment_time||'09:00:00');
-    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0]};
+    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',professional:row.attending_professional||''};
   });
   if(dashboardClinicId)renderDashboard();
 }
@@ -1067,9 +1103,9 @@ async function saveBooking(){
   const clinicId=currentClinic?.id||null;
   const{data:patient,error:pe}=await db.from('patients').insert({full_name:booking.fname+' '+booking.lname,phone:booking.phone,email:booking.email||null,notes:booking.reason||null,clinic_id:clinicId}).select().single();
   if(pe){showToast('Error saving patient info');console.error(pe);return;}
-  const{data:appt,error:ae}=await db.from('appointments').insert({patient_id:patient.id,clinic_id:clinicId,service:booking.service,appointment_date:dt.toISOString().split('T')[0],appointment_time:dt.toTimeString().split(' ')[0].slice(0,5),duration_minutes:booking.duration,status:'confirmed',notes:booking.reason||null,color,reminders_sent:'["booking"]'}).select().single();
+  const{data:appt,error:ae}=await db.from('appointments').insert({patient_id:patient.id,clinic_id:clinicId,service:booking.service,appointment_date:dt.toISOString().split('T')[0],appointment_time:dt.toTimeString().split(' ')[0].slice(0,5),duration_minutes:booking.duration,status:'confirmed',notes:booking.reason||null,color,reminders_sent:'["booking"]',payment_method:booking.payment_method||'cash',attending_professional:booking.professional||null}).select().single();
   if(ae){showToast('Error saving appointment');console.error(ae);return;}
-  appointments.unshift({id:appt.id,patientId:patient.id,fname:booking.fname,lname:booking.lname,phone:booking.phone,email:booking.email,service:booking.service,duration:booking.duration,dateTime:dt.toISOString(),status:'confirmed',remindersSent:['booking'],reason:booking.reason,color});
+  appointments.unshift({id:appt.id,patientId:patient.id,fname:booking.fname,lname:booking.lname,phone:booking.phone,email:booking.email,service:booking.service,duration:booking.duration,dateTime:dt.toISOString(),status:'confirmed',remindersSent:['booking'],reason:booking.reason,color,paymentMethod:booking.payment_method||'cash',professional:booking.professional||''});
   // Increment booking counter on clinic record
   if(clinicId){
     const newCount=(currentClinic?.total_bookings||0)+1;
@@ -1180,6 +1216,7 @@ function nextStep(from){
     booking.fname=fn;booking.lname=ln;booking.phone=ph;
     booking.email=em;
     booking.reason=document.getElementById('p-reason').value.trim();
+    booking.professional=document.getElementById('p-professional')?.value||'';
     // Show review screen (not success yet)
     document.getElementById('step5-review').style.display='';
     document.getElementById('step5-success').style.display='none';
@@ -1198,23 +1235,46 @@ function goToStep(s){
     ind.classList.remove('active','done');
     if(i<s)ind.classList.add('done');else if(i===s)ind.classList.add('active');
   }
+  if(s===4)populateStep4();
   currentStep=s;
+}
+function populateStep4(){
+  const staff=currentClinic?.staff||[];
+  const proGroup=document.getElementById('professional-group');
+  const proSel=document.getElementById('p-professional');
+  if(staff.length>0&&proGroup&&proSel){
+    proGroup.style.display='';
+    proSel.innerHTML='<option value="">Select a professional...</option>'+staff.map(s=>`<option value="${s.name}">${s.name}${s.role?' — '+s.role:''}</option>`).join('');
+  }else if(proGroup){proGroup.style.display='none';}
+  highlightPayment();checkStep4();
+}
+function highlightPayment(){
+  const g=document.getElementById('pay-gcash-label'),c=document.getElementById('pay-cash-label');
+  if(!g||!c)return;
+  if(booking.payment_method==='gcash'){g.style.borderColor='var(--blue)';g.style.background='var(--blue-light)';c.style.borderColor='var(--gray-border)';c.style.background='white';}
+  else{c.style.borderColor='var(--blue)';c.style.background='var(--blue-light)';g.style.borderColor='var(--gray-border)';g.style.background='white';}
 }
 function checkStep4(){
   const fn=document.getElementById('p-fname').value.trim(),ln=document.getElementById('p-lname').value.trim(),ph=document.getElementById('p-phone').value.trim(),em=document.getElementById('p-email').value.trim();
-  document.getElementById('btn-step4').disabled=!(fn&&ln&&ph&&em);
+  const hasStaff=(currentClinic?.staff||[]).length>0;
+  const pro=hasStaff?(document.getElementById('p-professional')?.value||''):'ok';
+  document.getElementById('btn-step4').disabled=!(fn&&ln&&ph&&em&&pro);
 }
 function buildConfirmation(){
   const d=new Date(booking.date);
   const dateStr=d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const clinicName=currentClinic?.name||'the clinic';
+  const payLabel=booking.payment_method==='gcash'?'💳 GCash':'💵 Cash at Clinic';
+  const proRow=booking.professional?`<div class="confirm-row"><span class="confirm-label">Professional</span><span class="confirm-value">${booking.professional}</span></div>`:'';
   const html=`
     <div class="confirm-row"><span class="confirm-label">Clinic</span><span class="confirm-value">${clinicName}</span></div>
     <div class="confirm-row"><span class="confirm-label">Patient</span><span class="confirm-value">${booking.fname} ${booking.lname}</span></div>
     <div class="confirm-row"><span class="confirm-label">Service</span><span class="confirm-value">${booking.service}</span></div>
+    ${proRow}
     <div class="confirm-row"><span class="confirm-label">Date</span><span class="confirm-value">${dateStr}</span></div>
     <div class="confirm-row"><span class="confirm-label">Time</span><span class="confirm-value">${booking.time}</span></div>
     <div class="confirm-row"><span class="confirm-label">Duration</span><span class="confirm-value">${booking.duration} minutes</span></div>
+    <div class="confirm-row"><span class="confirm-label">Payment</span><span class="confirm-value">${payLabel}</span></div>
     <div class="confirm-row"><span class="confirm-label">Contact</span><span class="confirm-value">${booking.phone}</span></div>
     <div class="confirm-row"><span class="confirm-label">Email</span><span class="confirm-value">${booking.email}</span></div>`;
   document.getElementById('confirm-details').innerHTML=html;
@@ -1229,9 +1289,11 @@ async function confirmAndBook(){
   document.getElementById('step5-success').style.display='';
 }
 function resetBooking(){
-  booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:''};
+  booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:'',payment_method:'cash',professional:''};
   document.querySelectorAll('.service-card').forEach(c=>c.classList.remove('selected'));
   ['p-fname','p-lname','p-phone','p-email','p-reason'].forEach(id=>document.getElementById(id).value='');
+  const cashRadio=document.getElementById('pay-cash');if(cashRadio)cashRadio.checked=true;
+  highlightPayment();
   document.getElementById('btn-step1').disabled=true;goToStep(1);
 }
 function renderCal(){
@@ -1250,26 +1312,43 @@ function renderCal(){
   document.getElementById('cal-days').innerHTML=html;
 }
 function changeMonth(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
-function selectDate(y,mo,d){
-  booking.date=new Date(y,mo,d);booking.time='';renderCal();renderTimeSlots();
+async function selectDate(y,mo,d){
+  booking.date=new Date(y,mo,d);booking.time='';renderCal();
   document.getElementById('btn-step2').disabled=false;
   document.getElementById('step3-date-label').textContent='Available slots for '+booking.date.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('btn-step3').disabled=true;
+  document.getElementById('morning-slots').innerHTML='<div style="color:var(--gray);font-size:12px;padding:4px">Loading...</div>';
+  document.getElementById('afternoon-slots').innerHTML='';
+  // Load taken slots from database
+  const dateStr=booking.date.toISOString().split('T')[0];
+  const clinicId=currentClinic?.id||null;
+  let takenSlots=[];
+  if(clinicId){
+    const{data}=await db.from('appointments').select('appointment_time').eq('clinic_id',clinicId).eq('appointment_date',dateStr).neq('status','cancelled');
+    if(data)takenSlots=data.map(r=>dbTimeTo12hr(r.appointment_time));
+  }
+  renderTimeSlots(takenSlots);
 }
-function renderTimeSlots(){
+function dbTimeTo12hr(t){
+  const[h,m]=(t||'00:00').split(':').map(Number);
+  const period=h>=12?'PM':'AM';const h12=h%12||12;
+  return`${h12}:${(m||0).toString().padStart(2,'0')} ${period}`;
+}
+function renderTimeSlots(takenSlots=[]){
   const morning=['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'];
   const afternoon=['1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM'];
-  const bookedSlots=['9:00 AM','10:30 AM','2:00 PM','3:30 PM'];
-  // Disable past slots when today is selected
-  const isToday=booking.date&&new Date(booking.date).toDateString()===new Date().toDateString();
-  const now=new Date();
-  function isPast(t){
-    if(!isToday)return false;
+  const buffer=new Date(Date.now()+3*60*60*1000); // 3-hour buffer from now
+  function isUnavailable(t){
     const[tp,period]=t.split(' ');let[h,m]=tp.split(':').map(Number);
     if(period==='PM'&&h!==12)h+=12;if(period==='AM'&&h===12)h=0;
-    return new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m||0)<=now;
+    const d=booking.date||new Date();
+    const slotDt=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m||0);
+    return slotDt<=buffer||takenSlots.includes(t);
   }
-  const r=(slots,cid)=>{document.getElementById(cid).innerHTML=slots.map(t=>{const tk=bookedSlots.includes(t)||isPast(t);return`<div class="time-slot${tk?' unavailable':''}"${tk?'':` onclick="selectTime(this,'${t}')"`}>${t}</div>`;}).join('');};
+  const r=(slots,cid)=>{
+    const html=slots.filter(t=>!isUnavailable(t)).map(t=>`<div class="time-slot" onclick="selectTime(this,'${t}')">${t}</div>`).join('');
+    document.getElementById(cid).innerHTML=html||'<div style="color:var(--gray);font-size:12px;padding:4px 0">No available slots</div>';
+  };
   r(morning,'morning-slots');r(afternoon,'afternoon-slots');
 }
 function selectTime(el,t){document.querySelectorAll('.time-slot').forEach(s=>s.classList.remove('selected'));el.classList.add('selected');booking.time=t;document.getElementById('btn-step3').disabled=false;}
@@ -1287,6 +1366,90 @@ function renderDashboard(){
   tg.innerHTML=todayAppts.length===0?'<div style="color:var(--gray);font-size:13px">No appointments scheduled for today.</div>':todayAppts.sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime)).map(a=>`<div class="today-appt" onclick="openAppt('${a.id}')"><div class="today-time">${fmtTime(a.dateTime)}</div><div class="today-name">${a.fname} ${a.lname}</div><div class="today-service">${a.service} · ${a.duration} min</div><div style="margin-top:6px">${statusBadge(a.status)}</div></div>`).join('');
   renderTable();
   renderAnalytics();
+  renderServicesManager();
+  renderStaffManager();
+}
+
+// ── Service & Staff Management ─────────────────────────
+function renderServicesManager(){
+  const services=dashboardClinic?.services||[];
+  const el=document.getElementById('services-manager-list');if(!el)return;
+  if(!services.length){el.innerHTML='<div style="padding:16px 20px;color:var(--gray);font-size:13px">No services yet. Add your first service above.</div>';return;}
+  el.innerHTML=services.map((s,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--gray-border)"><span style="font-size:22px">${s.icon||'🩺'}</span><div style="flex:1"><div style="font-weight:600;font-size:14px">${s.name}</div><div style="font-size:12px;color:var(--gray)">${s.desc||''} · ${s.duration} min</div></div><button class="btn btn-outline btn-sm" onclick="openServiceModal(${i})">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteService(${i})">Delete</button></div>`).join('');
+}
+function renderStaffManager(){
+  const staff=dashboardClinic?.staff||[];
+  const el=document.getElementById('staff-manager-list');if(!el)return;
+  if(!staff.length){el.innerHTML='<div style="padding:16px 20px;color:var(--gray);font-size:13px">No staff yet. Add team members so patients can choose their preferred professional.</div>';return;}
+  el.innerHTML=staff.map((s,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--gray-border)"><div style="width:36px;height:36px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--blue)">${s.name.charAt(0)}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${s.name}</div><div style="font-size:12px;color:var(--gray)">${s.role||'Staff'}</div></div><button class="btn btn-danger btn-sm" onclick="deleteStaff(${i})">Remove</button></div>`).join('');
+}
+function openServiceModal(idx){
+  const services=dashboardClinic?.services||[];
+  const s=idx>=0?services[idx]:{name:'',desc:'',duration:30,icon:'🩺'};
+  document.getElementById('service-modal-title').textContent=idx>=0?'Edit Service':'Add Service';
+  document.getElementById('service-modal-body').innerHTML=`
+    <div class="form-group"><label class="form-label">Service Name *</label><input class="form-input" type="text" id="svc-name" placeholder="e.g. Initial Consultation" value="${s.name||''}"></div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-input" type="text" id="svc-desc" placeholder="Brief description" value="${s.desc||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Duration (minutes) *</label><select class="form-input" id="svc-duration">${[15,20,30,45,60,90,120].map(d=>`<option value="${d}"${s.duration==d?' selected':''}>${d} min</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Icon (emoji)</label><input class="form-input" type="text" id="svc-icon" placeholder="🩺" value="${s.icon||'🩺'}" maxlength="2"></div>
+    </div>
+    <div style="padding-top:16px;border-top:1px solid var(--gray-border);display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-gray btn-sm" onclick="closeModal('service-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveService(${idx})">Save Service →</button>
+    </div>`;
+  openModal('service-modal');
+}
+async function saveService(idx){
+  const name=document.getElementById('svc-name').value.trim();
+  const desc=document.getElementById('svc-desc').value.trim();
+  const duration=parseInt(document.getElementById('svc-duration').value);
+  const icon=document.getElementById('svc-icon').value.trim()||'🩺';
+  if(!name){showToast('Service name is required');return;}
+  const services=[...(dashboardClinic?.services||[])];
+  const svc={name,desc,duration,icon};
+  if(idx>=0)services[idx]=svc;else services.push(svc);
+  const{error}=await db.from('clinics').update({services}).eq('id',dashboardClinicId);
+  if(error){showToast('Error saving service');return;}
+  dashboardClinic.services=services;closeModal('service-modal');renderServicesManager();
+  showToast(idx>=0?'Service updated ✓':'Service added ✓','success');
+}
+async function deleteService(idx){
+  if(!confirm('Delete this service?'))return;
+  const services=[...(dashboardClinic?.services||[])];
+  services.splice(idx,1);
+  const{error}=await db.from('clinics').update({services}).eq('id',dashboardClinicId);
+  if(error){showToast('Error deleting service');return;}
+  dashboardClinic.services=services;renderServicesManager();showToast('Service deleted');
+}
+function openStaffModal(){
+  document.getElementById('staff-modal-body').innerHTML=`
+    <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" type="text" id="staff-name" placeholder="e.g. Dr. Maria Santos"></div>
+    <div class="form-group"><label class="form-label">Role / Specialty</label><input class="form-input" type="text" id="staff-role" placeholder="e.g. Psychiatrist, Therapist, Nurse"></div>
+    <div style="padding-top:16px;border-top:1px solid var(--gray-border);display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-gray btn-sm" onclick="closeModal('staff-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveStaff()">Add Staff →</button>
+    </div>`;
+  openModal('staff-modal');
+}
+async function saveStaff(){
+  const name=document.getElementById('staff-name').value.trim();
+  const role=document.getElementById('staff-role').value.trim();
+  if(!name){showToast('Name is required');return;}
+  const staff=[...(dashboardClinic?.staff||[])];
+  staff.push({name,role});
+  const{error}=await db.from('clinics').update({staff}).eq('id',dashboardClinicId);
+  if(error){showToast('Error saving staff');return;}
+  dashboardClinic.staff=staff;closeModal('staff-modal');renderStaffManager();
+  showToast(name+' added ✓','success');
+}
+async function deleteStaff(idx){
+  if(!confirm('Remove this staff member?'))return;
+  const staff=[...(dashboardClinic?.staff||[])];
+  staff.splice(idx,1);
+  const{error}=await db.from('clinics').update({staff}).eq('id',dashboardClinicId);
+  if(error){showToast('Error removing staff');return;}
+  dashboardClinic.staff=staff;renderStaffManager();showToast('Staff member removed');
 }
 
 // ── Analytics ─────────────────────────────────────────
@@ -1378,9 +1541,11 @@ function openAppt(id){
     <div class="section-label">Appointment</div>
     <div class="confirm-box">
       <div class="detail-row"><span class="detail-key">Service</span><span class="detail-val">${a.service}</span></div>
+      ${a.professional?`<div class="detail-row"><span class="detail-key">Professional</span><span class="detail-val">${a.professional}</span></div>`:''}
       <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${fmtDate(a.dateTime)}</span></div>
       <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">${fmtTime(a.dateTime)}</span></div>
       <div class="detail-row"><span class="detail-key">Duration</span><span class="detail-val">${a.duration} minutes</span></div>
+      <div class="detail-row"><span class="detail-key">Payment</span><span class="detail-val">${a.paymentMethod==='gcash'?'💳 GCash':'💵 Cash at Clinic'}</span></div>
       <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">${statusBadge(a.status)}</span></div>
     </div>
     <div class="section-label">Reminder Timeline</div>
