@@ -591,7 +591,7 @@
           <div id="step5-success" style="display:none">
             <div class="confirm-header"><div class="confirm-icon">✅</div><div class="confirm-title">Appointment Confirmed!</div><div class="confirm-sub">Your booking has been received. Please save your details below.</div></div>
             <div class="confirm-box" id="confirm-details-success"></div>
-            <div class="reminder-notice"><span>📲</span><span>You'll receive automatic reminders <strong>48 hours</strong>, <strong>24 hours</strong>, and <strong>2 hours</strong> before your appointment.</span></div>
+            <div class="reminder-notice"><span>📲</span><span>You'll receive automatic reminders <strong>24 hours</strong> and <strong>1 hour</strong> before your appointment.</span></div>
             <div class="step-actions" style="margin-top:20px"><button class="btn btn-outline" onclick="resetBooking()">Book Another</button></div>
           </div>
         </div>
@@ -1185,8 +1185,17 @@ function selectDate(y,mo,d){
 function renderTimeSlots(){
   const morning=['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'];
   const afternoon=['1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM'];
-  const unavailable=['9:00 AM','10:30 AM','2:00 PM','3:30 PM'];
-  const r=(slots,cid)=>{document.getElementById(cid).innerHTML=slots.map(t=>{const tk=unavailable.includes(t);return`<div class="time-slot${tk?' unavailable':''}"${tk?'':` onclick="selectTime(this,'${t}')"`}>${t}</div>`;}).join('');};
+  const bookedSlots=['9:00 AM','10:30 AM','2:00 PM','3:30 PM'];
+  // Disable past slots when today is selected
+  const isToday=booking.date&&new Date(booking.date).toDateString()===new Date().toDateString();
+  const now=new Date();
+  function isPast(t){
+    if(!isToday)return false;
+    const[tp,period]=t.split(' ');let[h,m]=tp.split(':').map(Number);
+    if(period==='PM'&&h!==12)h+=12;if(period==='AM'&&h===12)h=0;
+    return new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m||0)<=now;
+  }
+  const r=(slots,cid)=>{document.getElementById(cid).innerHTML=slots.map(t=>{const tk=bookedSlots.includes(t)||isPast(t);return`<div class="time-slot${tk?' unavailable':''}"${tk?'':` onclick="selectTime(this,'${t}')"`}>${t}</div>`;}).join('');};
   r(morning,'morning-slots');r(afternoon,'afternoon-slots');
 }
 function selectTime(el,t){document.querySelectorAll('.time-slot').forEach(s=>s.classList.remove('selected'));el.classList.add('selected');booking.time=t;document.getElementById('btn-step3').disabled=false;}
@@ -1280,9 +1289,8 @@ function openAppt(id){
   const cname=dashboardClinic?.name||currentClinic?.name||'Clinic';
   const reminders=[
     {key:'booking',label:'Booking Confirmation',when:'At time of booking',msg:`Hi ${a.fname}! Your appointment at ${cname} is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or CANCEL. See you! 🌿`},
-    {key:'48hr',label:'48-Hour Reminder',when:'2 days before',msg:`Hi ${a.fname}, your appointment at ${cname} is in 2 days — ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE.`},
     {key:'24hr',label:'24-Hour Reminder',when:'1 day before',msg:`Hi ${a.fname}, your appointment at ${cname} is tomorrow at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. See you soon! 💙`},
-    {key:'2hr',label:'2-Hour Reminder',when:'2 hours before',msg:`Hi ${a.fname}, your appointment starts in 2 hours at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. See you soon! 🌿`},
+    {key:'1hr',label:'1-Hour Reminder',when:'1 hour before',msg:`Hi ${a.fname}, your appointment at ${cname} starts in 1 hour at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. See you soon! 🌿`},
     {key:'post',label:'Post-Session Follow-up',when:'After session',msg:`Hi ${a.fname}, thank you for visiting ${cname}! Would you like to book your next appointment? Reply YES or call us. 🙏`},
   ];
   document.getElementById('modal-content').innerHTML=`
@@ -1311,20 +1319,19 @@ function showSmsContent(key,id){
   const cname=dashboardClinic?.name||currentClinic?.name||'Clinic';
   const msgs={
     booking:`Hi ${a.fname}! Your appointment at ${cname} is confirmed for ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or CANCEL. See you! 🌿`,
-    '48hr':`Hi ${a.fname}, your appointment at ${cname} is in 2 days — ${fmtDate(a.dateTime)} at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE.`,
     '24hr':`Hi ${a.fname}, your appointment at ${cname} is tomorrow at ${fmtTime(a.dateTime)}. Reply CONFIRM or RESCHEDULE. 💙`,
-    '2hr':`Hi ${a.fname}, your appointment starts in 2 hours at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. 🌿`,
+    '1hr':`Hi ${a.fname}, your appointment at ${cname} starts in 1 hour at ${fmtTime(a.dateTime)}. Please arrive 5 minutes early. 🌿`,
     post:`Hi ${a.fname}, thank you for visiting ${cname}! Book your next appointment? Reply YES or call us. 🙏`
   };
-  const labels={booking:'Booking Confirmation','48hr':'48-Hour Reminder','24hr':'24-Hour Reminder','2hr':'2-Hour Reminder',post:'Post-Session Follow-up'};
+  const labels={booking:'Booking Confirmation','24hr':'24-Hour Reminder','1hr':'1-Hour Reminder',post:'Post-Session Follow-up'};
   document.getElementById('sms-content').innerHTML=`<p style="font-size:13px;color:var(--gray);margin-bottom:12px">Message for <strong>${a.fname} ${a.lname}</strong> — <strong>${labels[key]}</strong>:</p><div class="sms-preview"><div class="sms-bubble">${msgs[key]}</div><div class="sms-label">${cname} · ${new Date().toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'})}</div></div>`;
   document.getElementById('appt-modal').classList.remove('open');
   document.getElementById('sms-modal').classList.add('open');
 }
-function showSmsPreview(id){const a=appointments.find(x=>x.id===id);const next=['booking','48hr','24hr','2hr','post'].find(k=>!a.remindersSent.includes(k))||'post';showSmsContent(next,id);}
+function showSmsPreview(id){const a=appointments.find(x=>x.id===id);const next=['booking','24hr','1hr','post'].find(k=>!a.remindersSent.includes(k))||'post';showSmsContent(next,id);}
 async function sendNextReminder(id){
   const a=appointments.find(x=>x.id===id);
-  const next=['booking','48hr','24hr','2hr','post'].find(k=>!a.remindersSent.includes(k));
+  const next=['booking','24hr','1hr','post'].find(k=>!a.remindersSent.includes(k));
   if(next){
     const newR=[...a.remindersSent,next];
     const{error}=await db.from('appointments').update({reminders_sent:JSON.stringify(newR)}).eq('id',id);
@@ -1564,7 +1571,7 @@ async function seedDemoData(){
     const{data:patient,error:pe}=await db.from('patients').insert({full_name:s.name,phone:s.phone,email:s.email||null,clinic_id:dashboardClinicId}).select().single();
     if(pe){console.error('Seed patient error:',pe);continue;}
     const[h,m]=s.time.split(':');
-    await db.from('appointments').insert({patient_id:patient.id,clinic_id:dashboardClinicId,service:s.service,appointment_date:s.date,appointment_time:s.time+':00',duration_minutes:s.duration,status:s.status,color:s.color,reminders_sent:s.status==='completed'?'["booking","48hr","24hr","2hr"]':'["booking"]'});
+    await db.from('appointments').insert({patient_id:patient.id,clinic_id:dashboardClinicId,service:s.service,appointment_date:s.date,appointment_time:s.time+':00',duration_minutes:s.duration,status:s.status,color:s.color,reminders_sent:s.status==='completed'?'["booking","24hr","1hr"]':'["booking"]'});
   }
   await loadAppointments();
 }
