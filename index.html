@@ -1090,18 +1090,6 @@ async function init(){
     return;
   }
   if(!slug){
-    // Check if already logged in → redirect to their clinic (or admin)
-    const{data:{session}}=await db.auth.getSession();
-    if(session){
-      if(session.user.email==='luardojob@gmail.com'){
-        window.location.href='?admin';return;
-      }
-      const{data:profile}=await db.from('profiles').select('clinic_id').eq('id',session.user.id).single();
-      if(profile?.clinic_id){
-        const{data:clinicData}=await db.from('clinics').select('slug').eq('id',profile.clinic_id).single();
-        if(clinicData?.slug){window.location.href='?clinic='+clinicData.slug;return;}
-      }
-    }
     showPage('home');
     return;
   }
