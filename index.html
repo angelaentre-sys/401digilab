@@ -744,11 +744,6 @@
         <div class="login-icon">🏥</div>
         <div class="login-title">Clinic Staff Login</div>
         <div class="login-sub" id="login-sub-text">Sign in to manage your appointments</div>
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:11px;color:#1e40af;margin-bottom:14px;text-align:left">
-          <strong>Demo credentials:</strong><br>
-          Email: mindcare@clinic.com<br>
-          Password: MindCare2026!
-        </div>
         <div class="login-error" id="login-error">Incorrect email or password. Please try again.</div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="clinic-email" placeholder="clinic@email.com" onkeydown="if(event.key==='Enter')clinicLogin()"></div>
         <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="clinic-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')clinicLogin()"></div>
@@ -814,9 +809,47 @@
           <div id="services-manager-list"></div>
         </div>
         <!-- Staff Manager -->
-        <div class="table-card" style="margin-top:16px;margin-bottom:24px">
+        <div class="table-card" style="margin-top:16px">
           <div class="table-header"><div class="table-title">👥 Staff / Professionals</div><button class="btn btn-outline btn-sm" onclick="openStaffModal()">+ Add Staff</button></div>
           <div id="staff-manager-list"></div>
+        </div>
+        <!-- Working Hours Manager -->
+        <div class="table-card" style="margin-top:16px">
+          <div class="table-header">
+            <div class="table-title">🕐 Working Hours</div>
+            <button class="btn btn-outline btn-sm" onclick="saveWorkingHours()">Save Hours</button>
+          </div>
+          <div id="working-hours-editor" style="padding:16px 20px"></div>
+        </div>
+        <!-- Brand Color -->
+        <div class="table-card" style="margin-top:16px">
+          <div class="table-header"><div class="table-title">🎨 Brand Color</div></div>
+          <div style="padding:16px 20px">
+            <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Changes the color of your booking page for patients.</p>
+            <div id="brand-color-picker" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+        <!-- Account Settings -->
+        <div class="table-card" style="margin-top:16px;margin-bottom:24px">
+          <div class="table-header"><div class="table-title">⚙️ Account Settings</div></div>
+          <div style="padding:16px 20px">
+            <p style="font-size:13px;color:var(--gray);margin-bottom:14px">Need to update your password or phone number? Send a request and we'll update it within 24 hours.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="openSupportRequest('password')">🔑 Request Password Change</button>
+              <button class="btn btn-outline btn-sm" onclick="openSupportRequest('phone')">📱 Request Phone Update</button>
+            </div>
+            <div id="support-request-form" style="display:none;margin-top:16px;border-top:1px solid var(--gray-border);padding-top:16px">
+              <div class="form-group">
+                <label class="form-label" id="support-request-label">Details</label>
+                <textarea class="form-input" id="support-request-text" rows="3" placeholder="Describe what you need updated..."></textarea>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary btn-sm" onclick="submitSupportRequest()">Send Request →</button>
+                <button class="btn btn-gray btn-sm" onclick="closeSupportRequest()">Cancel</button>
+              </div>
+              <div id="support-request-msg" style="display:none;margin-top:10px;font-size:12px;color:var(--green)">✅ Request sent! We'll update your account within 24 hours.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1031,9 +1064,10 @@ const EJS_KEY='0pAG8uThsg3C0PTdr';
 emailjs.init({publicKey: EJS_KEY});
 
 async function sendBookingEmail(params){
-  if(!params.patient_email){return;} // skip if no email provided
+  if(!params.patient_email){return;}
   try{
     await emailjs.send(EJS_SERVICE,EJS_TEMPLATE,{
+      to_email: params.patient_email,
       clinic_name: params.clinic_name,
       patient_name: params.patient_name,
       patient_email: params.patient_email,
@@ -1045,10 +1079,27 @@ async function sendBookingEmail(params){
       message_body: `Your appointment slot at ${params.clinic_name} is confirmed. You'll receive an automatic reminder 1 hour before your appointment. If you need to cancel or reschedule, please contact us as soon as possible.`,
       clinic_phone: params.clinic_phone||'',
     });
-    console.log('Confirmation email sent ✓');
-  }catch(err){
-    console.warn('EmailJS error (non-blocking):', err);
-  }
+    console.log('Confirmation email sent to patient ✓');
+  }catch(err){console.warn('EmailJS error (non-blocking):', err);}
+}
+async function sendClinicNotificationEmail(params){
+  if(!params.clinic_email){return;}
+  try{
+    await emailjs.send(EJS_SERVICE,EJS_TEMPLATE,{
+      to_email: params.clinic_email,
+      clinic_name: params.clinic_name,
+      patient_name: params.clinic_name+' Team',
+      patient_email: params.clinic_email,
+      service: params.service,
+      date: params.date,
+      time: params.time,
+      duration: params.duration,
+      reminder_type: '🔔 New Booking Alert',
+      message_body: `A new appointment has been booked on your page.\n\nPatient: ${params.patient_name}\nPhone: ${params.patient_phone||'—'}\nEmail: ${params.patient_email_val||'—'}\nPayment: ${params.payment_method==='gcash'?'GCash':params.payment_method==='others'?'Others':'Cash at Clinic'}${params.reason?'\nReason: '+params.reason:''}`,
+      clinic_phone: params.clinic_phone||'',
+    });
+    console.log('Clinic notification email sent ✓');
+  }catch(err){console.warn('EmailJS clinic notify error (non-blocking):', err);}
 }
 
 // ── State ─────────────────────────────────────────────
@@ -1082,6 +1133,7 @@ function applyBrandColor(hex){
 async function init(){
   const params=new URLSearchParams(window.location.search);
   const slug=params.get('clinic');
+  const portalSlug=params.get('portal');
   const isAdmin=params.has('admin');
   // Admin route
   if(isAdmin){
@@ -1089,31 +1141,49 @@ async function init(){
     await initAdmin();
     return;
   }
+  // ── Portal route — clinic staff login/dashboard ──────
+  if(portalSlug){
+    const{data:clinic,error}=await db.from('clinics').select('*').eq('slug',portalSlug).single();
+    if(!clinic||error){showPage('notfound');return;}
+    currentClinic=clinic;
+    applyBrandColor(clinic.brand_color||'#1a56db');
+    document.getElementById('clinic-nav-icon').textContent=clinic.name.charAt(0);
+    document.getElementById('clinic-nav-name').textContent=clinic.name;
+    document.getElementById('login-sub-text').textContent='Sign in to manage '+clinic.name;
+    document.title=clinic.name+' — Staff Portal | 401 Digilab';
+    // Portal mode: hide patient booking nav tab, show only portal
+    document.querySelectorAll('#page-clinic .nav-tab').forEach(t=>t.style.display='none');
+    const now=new Date();
+    document.getElementById('dash-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    // Check for existing session — auto-show dashboard
+    const{data:{session}}=await db.auth.getSession();
+    if(session){await handlePostLogin(session.user,true);}
+    showPage('clinic');
+    switchView('clinic');
+    return;
+  }
+  // ── Homepage ──────────────────────────────────────────
   if(!slug){
     showPage('home');
     return;
   }
-  // Load clinic by slug
+  // ── Patient booking page ──────────────────────────────
   const{data:clinic,error}=await db.from('clinics').select('*').eq('slug',slug).single();
   if(!clinic||error){showPage('notfound');return;}
   currentClinic=clinic;
-  // Apply clinic brand color
   applyBrandColor(clinic.brand_color||'#1a56db');
-  // Update nav + page
   document.getElementById('clinic-nav-icon').textContent=clinic.name.charAt(0);
   document.getElementById('clinic-nav-name').textContent=clinic.name;
   document.title=clinic.name+' — Book an Appointment';
   document.getElementById('booking-hero-title').textContent='Book Your Appointment';
   document.getElementById('booking-hero-sub').textContent='Schedule your visit with '+clinic.name+'. Easy, fast, and confidential.';
-  // Render services
   renderServices(clinic.services||[]);
-  // Init calendar
   const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   renderCal();
   document.getElementById('dash-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  // Check for existing session (auto-login)
+  // If staff already logged in on the booking page → show their dashboard
   const{data:{session}}=await db.auth.getSession();
-  if(session){await handlePostLogin(session.user,false);}
+  if(session){await handlePostLogin(session.user,true);}
   showPage('clinic');
 }
 
@@ -1146,7 +1216,7 @@ async function handlePostLogin(user,showDashboard=true){
   }
   dashboardClinicId=profile.clinic_id;
   // Step 2: get clinic details separately (avoids FK join requirement)
-  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email,phone').eq('id',profile.clinic_id).single();
+  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email,phone,brand_color,working_hours').eq('id',profile.clinic_id).single();
   dashboardClinic=clinic||{};
   const cname=clinic?.name||'Your Clinic';
   const cslug=clinic?.slug||'';
@@ -1166,7 +1236,7 @@ async function loadAppointments(){
   const clinicId=dashboardClinicId||currentClinic?.id;
   if(!clinicId)return;
   const{data,error}=await db.from('appointments')
-    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,payment_status,attending_professional,patients(id,full_name,phone,email)`)
+    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,payment_status,attending_professional,staff_notes,patients(id,full_name,phone,email)`)
     .eq('clinic_id',clinicId)
     .order('appointment_date',{ascending:false});
   if(error){console.error(error);return;}
@@ -1181,7 +1251,7 @@ async function loadAppointments(){
     const fname=parts[0]||'Unknown';
     const lname=parts.slice(1).join(' ')||'';
     const dateStr=row.appointment_date+'T'+(row.appointment_time||'09:00:00');
-    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',paymentStatus:row.payment_status||'unpaid',professional:row.attending_professional||''};
+    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',paymentStatus:row.payment_status||'unpaid',professional:row.attending_professional||'',staffNotes:row.staff_notes||''};
   });
   if(dashboardClinicId)renderDashboard();
 }
@@ -1205,9 +1275,10 @@ async function saveBooking(){
     await db.from('clinics').update({total_bookings:newCount}).eq('id',clinicId);
     if(currentClinic)currentClinic.total_bookings=newCount;
   }
-  // Send booking confirmation email (non-blocking)
+  // Send emails (non-blocking)
+  const dateStr=new Date(dt).toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  // 1. Patient confirmation
   if(booking.email){
-    const dateStr=new Date(dt).toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     sendBookingEmail({
       clinic_name: currentClinic?.name||'Our Clinic',
       patient_name: booking.fname+' '+booking.lname,
@@ -1217,6 +1288,23 @@ async function saveBooking(){
       time: booking.time,
       duration: booking.duration,
       clinic_phone: currentClinic?.phone||'',
+    });
+  }
+  // 2. Clinic notification
+  if(currentClinic?.email){
+    sendClinicNotificationEmail({
+      clinic_name: currentClinic.name||'Your Clinic',
+      clinic_email: currentClinic.email,
+      patient_name: booking.fname+' '+booking.lname,
+      patient_phone: booking.phone,
+      patient_email_val: booking.email,
+      service: booking.service,
+      date: dateStr,
+      time: booking.time,
+      duration: booking.duration,
+      payment_method: booking.payment_method||'cash',
+      reason: booking.reason||'',
+      clinic_phone: currentClinic.phone||'',
     });
   }
   showToast('Appointment booked! ✓','success');
@@ -1261,7 +1349,7 @@ async function homeClinicLogin(){
     if(profile?.clinic_id){
       const{data:clinic}=await db.from('clinics').select('slug').eq('id',profile.clinic_id).single();
       if(clinic?.slug){
-        window.location.href='?clinic='+clinic.slug;return;
+        window.location.href='?portal='+clinic.slug;return;
       }
     }
     document.getElementById('home-login-error').textContent='No clinic found for this account. Contact admin.';
@@ -1301,7 +1389,7 @@ async function sectionClinicLogin(){
   const{data:profile}=await db.from('profiles').select('clinic_id').eq('id',data.user.id).single();
   if(profile?.clinic_id){
     const{data:clinic}=await db.from('clinics').select('slug').eq('id',profile.clinic_id).single();
-    if(clinic?.slug){window.location.href='?clinic='+clinic.slug;return;}
+    if(clinic?.slug){window.location.href='?portal='+clinic.slug;return;}
   }
   errEl.textContent='No clinic found for this account. Contact admin.';errEl.style.display='block';
 }
@@ -1345,15 +1433,14 @@ async function modalAdminLogin(){
 }
 
 async function clinicLogout(){
+  const slug=dashboardClinic?.slug||currentClinic?.slug;
   await db.auth.signOut();
   dashboardClinicId=null;
   dashboardClinic=null;
   appointments=[];
-  document.getElementById('clinic-dashboard').style.display='none';
-  document.getElementById('clinic-login').style.display='block';
-  document.getElementById('clinic-email').value='';
-  document.getElementById('clinic-pass').value='';
-  document.getElementById('login-error').style.display='none';
+  // Redirect back to the portal login page for this clinic
+  if(slug){window.location.href='?portal='+slug;}
+  else{window.location.href='/';}
 }
 
 function copyBookingLink(){
@@ -1489,6 +1576,15 @@ async function selectDate(y,mo,d){
   document.getElementById('btn-step3').disabled=true;
   document.getElementById('morning-slots').innerHTML='<div style="color:var(--gray);font-size:12px;padding:4px">Loading...</div>';
   document.getElementById('afternoon-slots').innerHTML='';
+  // Check working hours — is this day open?
+  const dayKeys=['sun','mon','tue','wed','thu','fri','sat'];
+  const dayKey=dayKeys[booking.date.getDay()];
+  const wh=currentClinic?.working_hours;
+  if(wh&&wh[dayKey]&&wh[dayKey].open===false){
+    document.getElementById('morning-slots').innerHTML='<div style="color:var(--gray);font-size:13px;padding:8px 0">🚫 Clinic is closed on this day. Please select another date.</div>';
+    document.getElementById('afternoon-slots').innerHTML='';
+    return;
+  }
   // Load taken slots from database
   const dateStr=booking.date.toISOString().split('T')[0];
   const clinicId=currentClinic?.id||null;
@@ -1505,9 +1601,24 @@ function dbTimeTo12hr(t){
   return`${h12}:${(m||0).toString().padStart(2,'0')} ${period}`;
 }
 function renderTimeSlots(takenSlots=[]){
-  const morning=['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'];
-  const afternoon=['1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM'];
-  const buffer=new Date(Date.now()+3*60*60*1000); // 3-hour buffer from now
+  const allMorning=['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'];
+  const allAfternoon=['1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM'];
+  // Apply working hours filter
+  const dayKeys=['sun','mon','tue','wed','thu','fri','sat'];
+  const dayKey=dayKeys[(booking.date||new Date()).getDay()];
+  const wh=currentClinic?.working_hours?.[dayKey];
+  function slotInHours(t){
+    if(!wh)return true;
+    const[tp,period]=t.split(' ');let[h,m]=tp.split(':').map(Number);
+    if(period==='PM'&&h!==12)h+=12;if(period==='AM'&&h===12)h=0;
+    const slotMins=h*60+(m||0);
+    const[sh,sm]=(wh.start||'00:00').split(':').map(Number);
+    const[eh,em]=(wh.end||'23:59').split(':').map(Number);
+    return slotMins>=sh*60+sm&&slotMins<eh*60+em;
+  }
+  const morning=allMorning.filter(slotInHours);
+  const afternoon=allAfternoon.filter(slotInHours);
+  const buffer=new Date(Date.now()+3*60*60*1000);
   function isUnavailable(t){
     const[tp,period]=t.split(' ');let[h,m]=tp.split(':').map(Number);
     if(period==='PM'&&h!==12)h+=12;if(period==='AM'&&h===12)h=0;
@@ -1538,6 +1649,8 @@ function renderDashboard(){
   renderAnalytics();
   renderServicesManager();
   renderStaffManager();
+  renderWorkingHoursEditor();
+  renderBrandColorPicker();
 }
 
 // ── Service & Staff Management ─────────────────────────
@@ -1574,6 +1687,125 @@ async function toggleStaffVisibility(idx,visible){
   if(!error){dashboardClinic.staff=staff;renderStaffManager();showToast(visible?`${staff[idx].name} visible to patients ✓`:`${staff[idx].name} hidden from patients`,'success');}
   else showToast('Error updating staff');
 }
+
+// ── A: Working Hours ──────────────────────────────────
+const DAY_LABELS=[{key:'mon',label:'Monday'},{key:'tue',label:'Tuesday'},{key:'wed',label:'Wednesday'},{key:'thu',label:'Thursday'},{key:'fri',label:'Friday'},{key:'sat',label:'Saturday'},{key:'sun',label:'Sunday'}];
+const DEFAULT_WH={mon:{open:true,start:'08:00',end:'18:00'},tue:{open:true,start:'08:00',end:'18:00'},wed:{open:true,start:'08:00',end:'18:00'},thu:{open:true,start:'08:00',end:'18:00'},fri:{open:true,start:'08:00',end:'18:00'},sat:{open:false,start:'08:00',end:'12:00'},sun:{open:false,start:'08:00',end:'12:00'}};
+function renderWorkingHoursEditor(){
+  const el=document.getElementById('working-hours-editor');if(!el)return;
+  const wh={...DEFAULT_WH,...(dashboardClinic?.working_hours||{})};
+  el.innerHTML=DAY_LABELS.map(({key,label})=>{
+    const d=wh[key]||{open:true,start:'08:00',end:'18:00'};
+    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-border);flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:7px;min-width:120px;cursor:pointer">
+        <input type="checkbox" id="wh-open-${key}" ${d.open?'checked':''} style="accent-color:var(--blue)" onchange="toggleDayOpen('${key}',this.checked)">
+        <span style="font-weight:600;font-size:13px">${label}</span>
+      </label>
+      <div id="wh-times-${key}" style="${d.open?'':'opacity:.35;pointer-events:none'}display:flex;align-items:center;gap:8px">
+        <select class="form-input" id="wh-start-${key}" style="width:auto;padding:4px 8px;font-size:12px">${timeOptions(d.start)}</select>
+        <span style="font-size:12px;color:var(--gray)">to</span>
+        <select class="form-input" id="wh-end-${key}" style="width:auto;padding:4px 8px;font-size:12px">${timeOptions(d.end)}</select>
+      </div>
+    </div>`;
+  }).join('')+'<div style="padding-top:12px"><button class="btn btn-outline btn-sm" onclick="saveWorkingHours()">💾 Save Working Hours</button></div>';
+}
+function timeOptions(selected){
+  const opts=[];
+  for(let h=6;h<=22;h++){for(const m of[0,30]){const hh=h.toString().padStart(2,'0'),mm=m.toString().padStart(2,'0'),val=`${hh}:${mm}`,label=h<12?`${h===0?12:h}:${mm} AM`:h===12?`12:${mm} PM`:`${h-12}:${mm} PM`;opts.push(`<option value="${val}"${val===selected?' selected':''}>${label}</option>`);}}
+  return opts.join('');
+}
+function toggleDayOpen(key,open){
+  const el=document.getElementById('wh-times-'+key);
+  if(el){el.style.opacity=open?'1':'0.35';el.style.pointerEvents=open?'auto':'none';}
+}
+async function saveWorkingHours(){
+  const wh={};
+  for(const{key}of DAY_LABELS){
+    const open=document.getElementById('wh-open-'+key)?.checked??true;
+    const start=document.getElementById('wh-start-'+key)?.value||'08:00';
+    const end=document.getElementById('wh-end-'+key)?.value||'18:00';
+    wh[key]={open,start,end};
+  }
+  const{error}=await db.from('clinics').update({working_hours:wh}).eq('id',dashboardClinicId);
+  if(!error){dashboardClinic.working_hours=wh;showToast('Working hours saved ✓','success');}
+  else showToast('Error saving working hours');
+}
+
+// ── C: Brand Color ────────────────────────────────────
+function renderBrandColorPicker(){
+  const el=document.getElementById('brand-color-picker');if(!el)return;
+  const current=dashboardClinic?.brand_color||'#1a56db';
+  el.innerHTML=BRAND_THEMES.map(t=>`
+    <div onclick="updateBrandColor('${t.hex}')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="width:40px;height:40px;border-radius:50%;background:${t.hex};border:3px solid ${t.hex===current?'#1f2937':'transparent'};box-shadow:${t.hex===current?'0 0 0 2px white inset':'none'};transition:all .15s"></div>
+      <span style="font-size:11px;color:var(--gray);text-align:center;max-width:60px">${t.label}</span>
+    </div>`).join('');
+}
+async function updateBrandColor(hex){
+  const{error}=await db.from('clinics').update({brand_color:hex}).eq('id',dashboardClinicId);
+  if(!error){
+    dashboardClinic.brand_color=hex;
+    if(currentClinic)currentClinic.brand_color=hex;
+    applyBrandColor(hex);
+    renderBrandColorPicker();
+    showToast('Brand color updated ✓','success');
+  }else showToast('Error updating brand color');
+}
+
+// ── C: Support Request ────────────────────────────────
+let supportRequestType='';
+function openSupportRequest(type){
+  supportRequestType=type;
+  const labels={password:'Request Password Change',phone:'Request Phone Number Update'};
+  const hints={password:'e.g. Please change my password to: [new password]',phone:'e.g. Please update my phone number to: 09XXXXXXXXX'};
+  document.getElementById('support-request-label').textContent=labels[type]||'Your Request';
+  document.getElementById('support-request-text').placeholder=hints[type]||'Describe what you need...';
+  document.getElementById('support-request-text').value='';
+  document.getElementById('support-request-msg').style.display='none';
+  document.getElementById('support-request-form').style.display='block';
+}
+function closeSupportRequest(){
+  document.getElementById('support-request-form').style.display='none';
+}
+async function submitSupportRequest(){
+  const msg=document.getElementById('support-request-text').value.trim();
+  if(!msg){showToast('Please describe your request');return;}
+  const cname=dashboardClinic?.name||'Unknown Clinic';
+  const cemail=dashboardClinic?.email||'';
+  try{
+    await emailjs.send(EJS_SERVICE,EJS_TEMPLATE,{
+      to_email:'luardojob@gmail.com',
+      clinic_name:'401 Digilab Support',
+      patient_name:'Admin',
+      patient_email:'luardojob@gmail.com',
+      service:'Account Support Request',
+      date:new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+      time:new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
+      duration:'—',
+      reminder_type:'⚙️ Support Request — '+cname,
+      message_body:`Clinic: ${cname}\nEmail: ${cemail}\nRequest Type: ${supportRequestType}\n\nMessage:\n${msg}`,
+      clinic_phone:'',
+    });
+    document.getElementById('support-request-msg').style.display='block';
+    document.getElementById('support-request-text').value='';
+    showToast('Request sent to admin ✓','success');
+  }catch(err){
+    console.warn('Support request email error:',err);
+    showToast('Failed to send request. Please email luardojob@gmail.com directly.');
+  }
+}
+
+// ── D: Staff Notes ────────────────────────────────────
+async function saveStaffNotes(id){
+  const notes=document.getElementById('staff-notes-'+id)?.value||'';
+  const{error}=await db.from('appointments').update({staff_notes:notes}).eq('id',id);
+  if(!error){
+    const a=appointments.find(x=>x.id===id);
+    if(a)a.staffNotes=notes;
+    showToast('Notes saved ✓','success');
+  }else showToast('Error saving notes');
+}
+
 function openServiceModal(idx){
   const services=dashboardClinic?.services||[];
   const s=idx>=0?services[idx]:{name:'',desc:'',duration:30,icon:'🩺'};
@@ -1740,7 +1972,12 @@ function openAppt(id){
       <div class="detail-row"><span class="detail-key">Payment Status</span><span class="detail-val" id="pay-status-${a.id}">${paymentBadge(a.paymentStatus)}</span></div>
       <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">${statusBadge(a.status)}</span></div>
     </div>
-    <div class="section-label">Reminder Timeline</div>
+    <div class="section-label">Staff Notes</div>
+    <div style="padding:12px 0 4px">
+      <textarea id="staff-notes-${id}" class="form-input" rows="3" placeholder="Internal notes (not visible to patient)..." style="font-size:13px;resize:vertical">${a.staffNotes||''}</textarea>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="saveStaffNotes('${id}')">💾 Save Notes</button>
+    </div>
+    <div class="section-label" style="margin-top:8px">Reminder Timeline</div>
     <div class="reminder-timeline">${reminders.map(r=>{const sent=a.remindersSent.includes(r.key);return`<div class="reminder-item"><div class="reminder-dot ${sent?'sent':'pending'}">${sent?'✓':'○'}</div><div style="flex:1"><div class="reminder-label">${r.label}${r.auto?'<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:10px;margin-left:6px;font-weight:600">AUTO</span>':''}</div><div class="reminder-time">${r.when} · ${sent?'<span style="color:var(--green)">Sent ✓</span>':'<span style="color:var(--amber)">Pending</span>'}</div><button class="reminder-preview-btn" onclick="showSmsContent('${r.key}','${id}')">Preview &amp; Send</button></div></div>`;}).join('')}</div>`;
   const isActive=a.status!=='completed'&&a.status!=='cancelled';
   document.getElementById('modal-footer').innerHTML=isActive?`
@@ -1797,6 +2034,7 @@ async function sendReminderEmail(key,id){
   const labels={booking:'Booking Confirmation','24hr':'24-Hour Reminder','1hr':'1-Hour Reminder',post:'Post-Session Follow-up'};
   try{
     await emailjs.send(EJS_SERVICE,EJS_TEMPLATE,{
+      to_email:a.email,
       clinic_name:cname,
       patient_name:a.fname+' '+a.lname,
       patient_email:a.email,
