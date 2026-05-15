@@ -1298,7 +1298,6 @@ async function handlePostLogin(user,showDashboard=true){
   document.getElementById('dash-clinic-badge').textContent='🏥 '+cname;
   document.getElementById('dash-booking-link').textContent=window.location.origin+'?clinic='+cslug;
   await loadAppointments();
-  await seedDemoData();
   if(showDashboard){
     document.getElementById('clinic-login').style.display='none';
     document.getElementById('clinic-dashboard').style.display='block';
