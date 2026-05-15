@@ -1231,7 +1231,7 @@ async function init(){
     document.getElementById('dash-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     // Check for existing session — auto-show dashboard
     const{data:{session}}=await db.auth.getSession();
-    if(session){await handlePostLogin(session.user,true);}
+    if(session){try{await handlePostLogin(session.user,true);}catch(e){console.error('Portal login error:',e);}}
     showPage('clinic');
     switchView('clinic');
     return;
@@ -1257,7 +1257,7 @@ async function init(){
   document.getElementById('dash-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   // If staff already logged in on the booking page → show their dashboard
   const{data:{session}}=await db.auth.getSession();
-  if(session){await handlePostLogin(session.user,true);}
+  if(session){try{await handlePostLogin(session.user,true);}catch(e){console.error('Portal login error:',e);}}
   showPage('clinic');
 }
 
@@ -2386,7 +2386,7 @@ async function approveApplication(id){
   await db.from('clinic_applications').update({status:'approved'}).eq('id',id);
   app.status='approved';
   // Show approval modal with setup instructions
-  approvalSqlText=`INSERT INTO profiles (id, clinic_id, role)\nVALUES ('PASTE_USER_UID_HERE', '${clinic.id}', 'admin');`;
+  approvalSqlText=`INSERT INTO profiles (id, clinic_id, role)\nVALUES ('PASTE_USER_UID_HERE', '${clinic.id}', 'clinic');`;
   document.getElementById('approval-clinic-name').textContent=app.clinic_name+' is now on the platform!';
   document.getElementById('approval-email').textContent=app.email;
   document.getElementById('approval-sql').textContent=approvalSqlText;
@@ -2502,7 +2502,7 @@ VALUES (
   '${clinic.id}',
   'admin'
 );</pre></div>
-      <button class="copy-btn" onclick="copyText(\`INSERT INTO profiles (id, clinic_id, role) VALUES ('PASTE_USER_UID_HERE', '${clinic.id}', 'admin');\`)">Copy SQL</button>
+      <button class="copy-btn" onclick="copyText(\`INSERT INTO profiles (id, clinic_id, role) VALUES ('PASTE_USER_UID_HERE', '${clinic.id}', 'clinic');\`)">Copy SQL</button>
     </div>
     <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
       <a href="?clinic=${slug}" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none">View Booking Page →</a>
