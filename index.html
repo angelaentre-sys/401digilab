@@ -122,7 +122,9 @@
   .time-slot { border: 2px solid var(--gray-border); border-radius: var(--radius-sm); padding: 9px 8px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
   .time-slot:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
   .time-slot.selected { border-color: var(--blue); background: var(--blue); color: white; }
-  .time-slot.unavailable { background: var(--gray-light); color: #d1d5db; cursor: not-allowed; text-decoration: line-through; }
+  .time-slot.unavailable { background: var(--gray-light); color: #d1d5db; cursor: not-allowed; text-decoration: line-through; pointer-events: none; }
+  .time-slot.taken { background: #fff1f2; color: #fca5a5; border-color: #fecaca; cursor: not-allowed; text-decoration: line-through; pointer-events: none; font-size: 11px; }
+  .time-slot.taken::after { content: ' · Booked'; font-size: 10px; }
   .form-group { margin-bottom: 16px; }
   .form-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; }
   .form-input { width: 100%; border: 1.5px solid var(--gray-border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; outline: none; transition: border .2s; font-family: inherit; }
@@ -1172,7 +1174,7 @@ let dashboardClinicId=null;   // set after clinic login (dashboard context)
 let dashboardClinic=null;     // full clinic object after login
 let currentStep=1;
 let booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:'',payment_method:'cash',professional:''};
-let calYear,calMonth,appointments=[],activeFilter='upcoming',activeDateFilter=null,refreshInterval=null,lastRefreshTime=null;
+let calYear,calMonth,appointments=[],activeFilter='upcoming',activeDateFilter=null,refreshInterval=null,lastRefreshTime=null,realtimeChannel=null;
 let calViewMode='7day',calDisplayYear=new Date().getFullYear(),calDisplayMonth=new Date().getMonth();
 const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
 const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#fce7f3','#e0f2fe'];
@@ -1303,6 +1305,7 @@ async function handlePostLogin(user,showDashboard=true){
     document.getElementById('clinic-dashboard').style.display='block';
     renderDashboard();
     startAutoRefresh();
+    startRealtimeSync();
     updateRefreshLabel();
   }
 }
@@ -1510,6 +1513,8 @@ async function modalAdminLogin(){
 
 async function clinicLogout(){
   const slug=dashboardClinic?.slug||currentClinic?.slug;
+  if(realtimeChannel){db.removeChannel(realtimeChannel);realtimeChannel=null;}
+  if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}
   await db.auth.signOut();
   dashboardClinicId=null;
   dashboardClinic=null;
@@ -1695,16 +1700,23 @@ function renderTimeSlots(takenSlots=[]){
   const morning=allMorning.filter(slotInHours);
   const afternoon=allAfternoon.filter(slotInHours);
   const buffer=new Date(Date.now()+3*60*60*1000);
-  function isUnavailable(t){
+  function isPast(t){
     const[tp,period]=t.split(' ');let[h,m]=tp.split(':').map(Number);
     if(period==='PM'&&h!==12)h+=12;if(period==='AM'&&h===12)h=0;
     const d=booking.date||new Date();
     const slotDt=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m||0);
-    return slotDt<=buffer||takenSlots.includes(t);
+    return slotDt<=buffer;
   }
   const r=(slots,cid)=>{
-    const html=slots.filter(t=>!isUnavailable(t)).map(t=>`<div class="time-slot" onclick="selectTime(this,'${t}')">${t}</div>`).join('');
-    document.getElementById(cid).innerHTML=html||'<div style="color:var(--gray);font-size:12px;padding:4px 0">No available slots</div>';
+    if(!slots.length){document.getElementById(cid).innerHTML='<div style="color:var(--gray);font-size:12px;padding:4px 0">No slots available</div>';return;}
+    const html=slots.map(t=>{
+      const booked=takenSlots.includes(t);
+      const past=isPast(t);
+      if(booked) return`<div class="time-slot taken">${t}</div>`;
+      if(past)   return`<div class="time-slot unavailable">${t}</div>`;
+      return`<div class="time-slot" onclick="selectTime(this,'${t}')">${t}</div>`;
+    }).join('');
+    document.getElementById(cid).innerHTML=html;
   };
   r(morning,'morning-slots');r(afternoon,'afternoon-slots');
 }
@@ -2622,7 +2634,7 @@ function startAutoRefresh(){
   refreshInterval=setInterval(async()=>{
     await loadAppointments();
     updateRefreshLabel();
-  },60000); // refresh every 60 seconds
+  },30000); // refresh every 30 seconds (fallback)
 }
 function updateRefreshLabel(){
   lastRefreshTime=new Date();
@@ -2636,6 +2648,23 @@ async function manualRefresh(){
   updateRefreshLabel();
   if(btn){btn.textContent='🔄 Refresh';btn.disabled=false;}
   showToast('Dashboard refreshed ✓','success');
+}
+// ── v24: Realtime sync — instant update on new bookings ──
+function startRealtimeSync(){
+  if(realtimeChannel){db.removeChannel(realtimeChannel);realtimeChannel=null;}
+  if(!dashboardClinicId)return;
+  let debounceTimer=null;
+  realtimeChannel=db.channel('clinic-appts-'+dashboardClinicId)
+    .on('postgres_changes',{event:'*',schema:'public',table:'appointments',filter:'clinic_id=eq.'+dashboardClinicId},
+      ()=>{
+        // Debounce: if multiple events fire at once, only reload once
+        clearTimeout(debounceTimer);
+        debounceTimer=setTimeout(async()=>{
+          await loadAppointments();
+          updateRefreshLabel();
+        },500);
+      })
+    .subscribe();
 }
 
 // ── v19/v20: Calendar (7-day strip + month view) ──────
