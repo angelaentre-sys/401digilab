@@ -17,6 +17,7 @@
     --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
     --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
     --radius: 10px; --radius-sm: 6px;
+    --hero-from: #1e3a8a; --hero-to: #1a56db;
   }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: var(--dark); min-height: 100vh; }
 
@@ -76,7 +77,7 @@
 
   /* ── BOOKING (clinic pages) ── */
   .view { display: none; } .view.active { display: block; }
-  .booking-hero { background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%); color: white; padding: 48px 24px 80px; text-align: center; }
+  .booking-hero { background: linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 100%); color: white; padding: 48px 24px 80px; text-align: center; }
   .booking-hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
   .booking-hero p { font-size: 15px; opacity: .85; max-width: 480px; margin: 0 auto; }
   .booking-container { max-width: 620px; margin: -48px auto 40px; padding: 0 16px; }
@@ -374,6 +375,27 @@
   .upcoming-day-num { font-size: 22px; font-weight: 700; color: var(--dark); margin: 3px 0 2px; line-height: 1; }
   .upcoming-day-count { font-size: 11px; font-weight: 600; color: var(--blue); }
   .upcoming-day-count.zero { color: var(--gray); font-weight: 400; }
+  /* ── MONTH CALENDAR (v20) ── */
+  .cal-view-toggle { display: flex; gap: 0; background: var(--gray-light); border-radius: 6px; padding: 2px; }
+  .cal-view-btn { padding: 5px 12px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; background: none; color: var(--gray); font-family: inherit; transition: all .15s; }
+  .cal-view-btn.active { background: white; color: var(--blue); box-shadow: var(--shadow); }
+  .month-cal-nav-bar { display: flex; align-items: center; gap: 8px; }
+  .month-cal-nav { background: none; border: 1px solid var(--gray-border); border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .month-cal-nav:hover { background: var(--blue-light); border-color: var(--blue); }
+  .month-cal-title-lbl { font-size: 13px; font-weight: 700; color: var(--dark); min-width: 100px; text-align: center; }
+  .month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; padding: 0 16px 16px; }
+  .month-day-name { text-align: center; font-size: 10px; font-weight: 700; color: var(--gray); padding: 6px 0 10px; text-transform: uppercase; letter-spacing: .4px; }
+  .month-cell { display: flex; flex-direction: column; align-items: center; padding: 5px 2px 4px; border-radius: 8px; cursor: pointer; transition: background .15s; min-height: 52px; }
+  .month-cell:hover:not(.empty) { background: var(--blue-light); }
+  .month-cell.empty { cursor: default; }
+  .month-cell.past { opacity: .45; }
+  .month-cell.selected { background: var(--blue-light); }
+  .month-cell-num { font-size: 13px; font-weight: 600; color: var(--dark); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .month-cell.today .month-cell-num { background: var(--blue); color: white; }
+  .month-cell.selected .month-cell-num { font-weight: 700; color: var(--blue); }
+  .month-cell-count { font-size: 10px; font-weight: 700; color: var(--blue); margin-top: 2px; }
+  .month-cell-dots { display: flex; gap: 2px; justify-content: center; margin-top: 3px; }
+  .month-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
   .svc-bar-row { margin-bottom: 10px; }
   .svc-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
   .svc-bar-track { background: var(--gray-border); border-radius: 4px; height: 6px; overflow: hidden; }
@@ -805,13 +827,32 @@
         </div>
 
         <div class="today-section"><div class="today-title">🌅 Today's Schedule <span id="today-count" class="badge badge-confirmed" style="font-size:11px"></span></div><div class="today-grid" id="today-grid"></div></div>
-        <!-- Upcoming 7-Day Calendar Strip (v19) -->
+        <!-- Calendar Card: 7-Day Strip + Month View (v19/v20) -->
         <div class="table-card" id="upcoming-calendar-card" style="margin-top:16px">
           <div class="table-header">
-            <div class="table-title">📅 Next 7 Days</div>
-            <button class="btn btn-gray btn-sm" id="clear-date-btn" style="display:none" onclick="clearDateFilter()">✕ Clear Date</button>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <div class="table-title" id="cal-card-title">📅 Next 7 Days</div>
+              <div class="cal-view-toggle">
+                <button class="cal-view-btn active" id="cal-btn-7day" onclick="setCalView('7day')">7 Days</button>
+                <button class="cal-view-btn" id="cal-btn-month" onclick="setCalView('month')">📆 Month</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="month-cal-nav-bar" id="month-nav-bar" style="display:none">
+                <button class="month-cal-nav" onclick="changeCalMonth(-1)">‹</button>
+                <span class="month-cal-title-lbl" id="month-cal-title-lbl"></span>
+                <button class="month-cal-nav" onclick="changeCalMonth(1)">›</button>
+              </div>
+              <button class="btn btn-gray btn-sm" id="clear-date-btn" style="display:none" onclick="clearDateFilter()">✕ Clear Date</button>
+            </div>
           </div>
-          <div class="upcoming-strip" id="upcoming-strip"></div>
+          <!-- 7-day strip -->
+          <div id="strip-wrap"><div class="upcoming-strip" id="upcoming-strip"></div></div>
+          <!-- Month grid -->
+          <div id="month-cal-wrap" style="display:none">
+            <div class="month-grid" id="month-day-names"></div>
+            <div class="month-grid" id="month-cells"></div>
+          </div>
         </div>
 
         <div class="table-card" style="margin-top:16px">
@@ -844,12 +885,12 @@
           </div>
           <div id="working-hours-editor" style="padding:16px 20px"></div>
         </div>
-        <!-- Brand Color -->
+        <!-- Brand Colors (v20: up to 2 colors) -->
         <div class="table-card" style="margin-top:16px">
-          <div class="table-header"><div class="table-title">🎨 Brand Color</div></div>
+          <div class="table-header"><div class="table-title">🎨 Brand Colors</div></div>
           <div style="padding:16px 20px">
-            <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Changes the color of your booking page for patients.</p>
-            <div id="brand-color-picker" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+            <p style="font-size:12px;color:var(--gray);margin-bottom:16px">Customize how your booking page looks to patients. Pick up to 2 colors.</p>
+            <div id="brand-color-picker"></div>
           </div>
         </div>
         <!-- Account Settings -->
@@ -1132,6 +1173,7 @@ let dashboardClinic=null;     // full clinic object after login
 let currentStep=1;
 let booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:'',payment_method:'cash',professional:''};
 let calYear,calMonth,appointments=[],activeFilter='upcoming',activeDateFilter=null,refreshInterval=null,lastRefreshTime=null;
+let calViewMode='7day',calDisplayYear=new Date().getFullYear(),calDisplayMonth=new Date().getMonth();
 const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
 const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#fce7f3','#e0f2fe'];
 
@@ -1144,12 +1186,21 @@ const BRAND_THEMES=[
   {hex:'#0891b2',light:'#e0f7fa',dark:'#164e63',label:'Teal'},
   {hex:'#d97706',light:'#fef3c7',dark:'#92400e',label:'Amber Gold'},
 ];
-function applyBrandColor(hex){
+function applyBrandColor(hex,hex2){
   if(!hex)return;
   const theme=BRAND_THEMES.find(t=>t.hex===hex)||{hex,light:'#ebf2ff',dark:'#1e3a8a'};
   document.documentElement.style.setProperty('--blue',theme.hex);
   document.documentElement.style.setProperty('--blue-light',theme.light);
   document.documentElement.style.setProperty('--blue-dark',theme.dark);
+  // Hero gradient: Color2 (dark→main) or fallback to Color1 dark→main
+  if(hex2&&hex2!==hex){
+    const t2=BRAND_THEMES.find(t=>t.hex===hex2)||{hex:hex2,dark:hex2};
+    document.documentElement.style.setProperty('--hero-from',t2.dark||hex2);
+    document.documentElement.style.setProperty('--hero-to',t2.hex||hex2);
+  } else {
+    document.documentElement.style.setProperty('--hero-from',theme.dark);
+    document.documentElement.style.setProperty('--hero-to',theme.hex);
+  }
 }
 
 // ── Routing: called on page load ──────────────────────
@@ -1169,7 +1220,7 @@ async function init(){
     const{data:clinic,error}=await db.from('clinics').select('*').eq('slug',portalSlug).single();
     if(!clinic||error){showPage('notfound');return;}
     currentClinic=clinic;
-    applyBrandColor(clinic.brand_color||'#1a56db');
+    applyBrandColor(clinic.brand_color||'#1a56db',clinic.brand_color_2||null);
     document.getElementById('clinic-nav-icon').textContent=clinic.name.charAt(0);
     document.getElementById('clinic-nav-name').textContent=clinic.name;
     document.getElementById('login-sub-text').textContent='Sign in to manage '+clinic.name;
@@ -1194,7 +1245,7 @@ async function init(){
   const{data:clinic,error}=await db.from('clinics').select('*').eq('slug',slug).single();
   if(!clinic||error){showPage('notfound');return;}
   currentClinic=clinic;
-  applyBrandColor(clinic.brand_color||'#1a56db');
+  applyBrandColor(clinic.brand_color||'#1a56db',clinic.brand_color_2||null);
   document.getElementById('clinic-nav-icon').textContent=clinic.name.charAt(0);
   document.getElementById('clinic-nav-name').textContent=clinic.name;
   document.title=clinic.name+' — Book an Appointment';
@@ -1239,8 +1290,9 @@ async function handlePostLogin(user,showDashboard=true){
   }
   dashboardClinicId=profile.clinic_id;
   // Step 2: get clinic details separately (avoids FK join requirement)
-  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email,phone,brand_color,working_hours').eq('id',profile.clinic_id).single();
+  const{data:clinic}=await db.from('clinics').select('id,name,slug,services,email,owner_email,phone,brand_color,brand_color_2,working_hours').eq('id',profile.clinic_id).single();
   dashboardClinic=clinic||{};
+  if(clinic?.brand_color)applyBrandColor(clinic.brand_color,clinic.brand_color_2||null);
   const cname=clinic?.name||'Your Clinic';
   const cslug=clinic?.slug||'';
   document.getElementById('dash-clinic-badge').textContent='🏥 '+cname;
@@ -1757,25 +1809,54 @@ async function saveWorkingHours(){
   else showToast('Error saving working hours');
 }
 
-// ── C: Brand Color ────────────────────────────────────
+// ── C: Brand Colors (v20: up to 2 colors) ─────────────
+function swatchHTML(t,isCurrent,onclick){
+  return`<div onclick="${onclick}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;user-select:none">
+    <div style="width:40px;height:40px;border-radius:50%;background:${t.hex};border:3px solid ${isCurrent?'#1f2937':'transparent'};box-shadow:${isCurrent?'0 0 0 2px white inset':'none'};transition:all .15s"></div>
+    <span style="font-size:11px;color:var(--gray);text-align:center;max-width:60px;line-height:1.3">${t.label}</span>
+  </div>`;
+}
 function renderBrandColorPicker(){
   const el=document.getElementById('brand-color-picker');if(!el)return;
-  const current=dashboardClinic?.brand_color||'#1a56db';
-  el.innerHTML=BRAND_THEMES.map(t=>`
-    <div onclick="updateBrandColor('${t.hex}')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
-      <div style="width:40px;height:40px;border-radius:50%;background:${t.hex};border:3px solid ${t.hex===current?'#1f2937':'transparent'};box-shadow:${t.hex===current?'0 0 0 2px white inset':'none'};transition:all .15s"></div>
-      <span style="font-size:11px;color:var(--gray);text-align:center;max-width:60px">${t.label}</span>
-    </div>`).join('');
+  const c1=dashboardClinic?.brand_color||'#1a56db';
+  const c2=dashboardClinic?.brand_color_2||null;
+  const swatches1=BRAND_THEMES.map(t=>swatchHTML(t,t.hex===c1,`updateBrandColor('${t.hex}')`)).join('');
+  const noneSelected=!c2;
+  const noneBtn=`<div onclick="updateBrandColor2(null)" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;user-select:none">
+    <div style="width:40px;height:40px;border-radius:50%;background:var(--gray-border);border:3px solid ${noneSelected?'#1f2937':'transparent'};box-shadow:${noneSelected?'0 0 0 2px white inset':'none'};display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--gray);transition:all .15s">–</div>
+    <span style="font-size:11px;color:var(--gray);text-align:center;max-width:60px">None</span>
+  </div>`;
+  const swatches2=noneBtn+BRAND_THEMES.map(t=>swatchHTML(t,t.hex===c2,`updateBrandColor2('${t.hex}')`)).join('');
+  el.innerHTML=`
+    <div style="margin-bottom:18px">
+      <div style="font-size:12px;font-weight:700;color:var(--dark);margin-bottom:3px">Color 1 — Buttons &amp; Navigation</div>
+      <div style="font-size:11px;color:var(--gray);margin-bottom:10px">Controls buttons, nav bar, accents, and highlights on the booking page.</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${swatches1}</div>
+    </div>
+    <div style="border-top:1px solid var(--gray-border);padding-top:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--dark);margin-bottom:3px">Color 2 — Hero Banner Background <span style="font-size:11px;font-weight:400;color:var(--gray)">(optional)</span></div>
+      <div style="font-size:11px;color:var(--gray);margin-bottom:10px">Creates a two-tone gradient for the banner patients see at the top of the booking page.</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${swatches2}</div>
+    </div>`;
 }
 async function updateBrandColor(hex){
   const{error}=await db.from('clinics').update({brand_color:hex}).eq('id',dashboardClinicId);
   if(!error){
     dashboardClinic.brand_color=hex;
     if(currentClinic)currentClinic.brand_color=hex;
-    applyBrandColor(hex);
+    applyBrandColor(hex,dashboardClinic.brand_color_2||null);
     renderBrandColorPicker();
-    showToast('Brand color updated ✓','success');
+    showToast('Primary color updated ✓','success');
   }else showToast('Error updating brand color');
+}
+async function updateBrandColor2(hex){
+  const{error}=await db.from('clinics').update({brand_color_2:hex}).eq('id',dashboardClinicId);
+  if(!error){
+    dashboardClinic.brand_color_2=hex;
+    applyBrandColor(dashboardClinic.brand_color||'#1a56db',hex);
+    renderBrandColorPicker();
+    showToast(hex?'Hero color updated ✓':'Hero color removed ✓','success');
+  }else showToast('Error updating hero color');
 }
 
 // ── C: Support Request ────────────────────────────────
@@ -2558,13 +2639,37 @@ async function manualRefresh(){
   showToast('Dashboard refreshed ✓','success');
 }
 
-// ── v19: Upcoming Calendar Strip ──────────────────────
+// ── v19/v20: Calendar (7-day strip + month view) ──────
+function setCalView(mode){
+  calViewMode=mode;
+  const btn7=document.getElementById('cal-btn-7day');
+  const btnM=document.getElementById('cal-btn-month');
+  if(btn7)btn7.classList.toggle('active',mode==='7day');
+  if(btnM)btnM.classList.toggle('active',mode==='month');
+  const stripWrap=document.getElementById('strip-wrap');
+  const monthWrap=document.getElementById('month-cal-wrap');
+  const monthNav=document.getElementById('month-nav-bar');
+  const titleEl=document.getElementById('cal-card-title');
+  if(stripWrap)stripWrap.style.display=mode==='7day'?'block':'none';
+  if(monthWrap)monthWrap.style.display=mode==='month'?'block':'none';
+  if(monthNav)monthNav.style.display=mode==='month'?'flex':'none';
+  if(titleEl)titleEl.textContent=mode==='7day'?'📅 Next 7 Days':'📆 Monthly View';
+  if(mode==='month')renderMonthCalendar();
+  else render7DayStrip();
+}
 function renderUpcomingCalendar(){
   const card=document.getElementById('upcoming-calendar-card');
-  const strip=document.getElementById('upcoming-strip');
-  if(!card||!strip)return;
+  if(!card)return;
   if(activeFilter!=='upcoming'){card.style.display='none';return;}
   card.style.display='block';
+  if(calViewMode==='month')renderMonthCalendar();
+  else render7DayStrip();
+  const clearBtn=document.getElementById('clear-date-btn');
+  if(clearBtn)clearBtn.style.display=activeDateFilter?'inline-flex':'none';
+}
+function render7DayStrip(){
+  const strip=document.getElementById('upcoming-strip');
+  if(!strip)return;
   const today=new Date();today.setHours(0,0,0,0);
   const days=[];
   for(let i=0;i<7;i++){
@@ -2578,21 +2683,67 @@ function renderUpcomingCalendar(){
   }
   strip.innerHTML=days.map(({date,dateStr,count,isToday})=>{
     const dayName=date.toLocaleDateString('en-PH',{weekday:'short'});
-    const dayNum=date.getDate();
     const mon=date.toLocaleDateString('en-PH',{month:'short'});
     const isSelected=activeDateFilter===dateStr;
     return`<div class="upcoming-day${isSelected?' selected':''}${isToday?' today-day':''}" onclick="filterByDate('${dateStr}')">
       <div class="upcoming-day-name">${isToday?'TODAY':dayName.toUpperCase()}</div>
-      <div class="upcoming-day-num">${dayNum}</div>
+      <div class="upcoming-day-num">${date.getDate()}</div>
       <div style="font-size:10px;color:var(--gray);margin-bottom:4px">${mon}</div>
       <div class="upcoming-day-count${count===0?' zero':''}">${count===0?'—':count+' appt'+(count!==1?'s':'')}</div>
     </div>`;
   }).join('');
+}
+function renderMonthCalendar(){
+  const dayNamesEl=document.getElementById('month-day-names');
+  const cellsEl=document.getElementById('month-cells');
+  const titleEl=document.getElementById('month-cal-title-lbl');
+  if(!cellsEl)return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const firstDay=new Date(calDisplayYear,calDisplayMonth,1);
+  const lastDay=new Date(calDisplayYear,calDisplayMonth+1,0);
+  if(titleEl)titleEl.textContent=firstDay.toLocaleDateString('en-PH',{month:'long',year:'numeric'});
+  // Day name headers
+  if(dayNamesEl)dayNamesEl.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="month-day-name">${d}</div>`).join('');
+  // Build cells
+  const cells=[];
+  for(let i=0;i<firstDay.getDay();i++)cells.push({empty:true});
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date=new Date(calDisplayYear,calDisplayMonth,d);
+    date.setHours(0,0,0,0);
+    const dStr=date.toISOString().slice(0,10);
+    const count=appointments.filter(a=>{
+      const aDate=new Date(a.dateTime);aDate.setHours(0,0,0,0);
+      return aDate.getTime()===date.getTime()&&a.status!=='cancelled';
+    }).length;
+    cells.push({d,dStr,count,isToday:date.getTime()===today.getTime(),isPast:date<today,isSelected:activeDateFilter===dStr});
+  }
+  cellsEl.innerHTML=cells.map(c=>{
+    if(c.empty)return`<div class="month-cell empty"></div>`;
+    const dots=c.count>0?[...Array(Math.min(c.count,3))].map(()=>`<div class="month-dot"></div>`).join(''):'';
+    return`<div class="month-cell${c.isToday?' today':''}${c.isPast?' past':''}${c.isSelected?' selected':''}" onclick="filterByDate('${c.dStr}')">
+      <div class="month-cell-num">${c.d}</div>
+      ${c.count>0?`<div class="month-cell-count">${c.count}</div>`:''}
+      ${c.count>0?`<div class="month-cell-dots">${dots}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function changeCalMonth(delta){
+  calDisplayMonth+=delta;
+  if(calDisplayMonth<0){calDisplayMonth=11;calDisplayYear--;}
+  if(calDisplayMonth>11){calDisplayMonth=0;calDisplayYear++;}
+  activeDateFilter=null;
   const clearBtn=document.getElementById('clear-date-btn');
-  if(clearBtn)clearBtn.style.display=activeDateFilter?'inline-flex':'none';
+  if(clearBtn)clearBtn.style.display='none';
+  renderMonthCalendar();
+  renderTable();
 }
 function filterByDate(dateStr){
   activeDateFilter=activeDateFilter===dateStr?null:dateStr;
+  // In month view — scroll nav to show the selected month
+  if(activeDateFilter){
+    const d=new Date(dateStr+'T00:00:00');
+    calDisplayYear=d.getFullYear();calDisplayMonth=d.getMonth();
+  }
   renderUpcomingCalendar();
   renderTable();
 }
