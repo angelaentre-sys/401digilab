@@ -363,6 +363,17 @@
   .analytics-sub { font-size: 11px; color: var(--gray); font-weight: 400; margin-left: auto; }
   .chart-wrap { position: relative; height: 190px; }
   .donut-wrap { position: relative; height: 150px; }
+  /* ── UPCOMING CALENDAR STRIP (v19) ── */
+  .upcoming-strip { display: flex; gap: 8px; padding: 4px 20px 16px; overflow-x: auto; scrollbar-width: none; }
+  .upcoming-strip::-webkit-scrollbar { display: none; }
+  .upcoming-day { flex: 0 0 auto; width: 76px; background: var(--gray-light); border-radius: 10px; padding: 10px 8px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all .2s; }
+  .upcoming-day:hover { border-color: var(--blue); background: var(--blue-light); }
+  .upcoming-day.selected { border-color: var(--blue); background: var(--blue-light); }
+  .upcoming-day.today-day { border-color: var(--blue); }
+  .upcoming-day-name { font-size: 10px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
+  .upcoming-day-num { font-size: 22px; font-weight: 700; color: var(--dark); margin: 3px 0 2px; line-height: 1; }
+  .upcoming-day-count { font-size: 11px; font-weight: 600; color: var(--blue); }
+  .upcoming-day-count.zero { color: var(--gray); font-weight: 400; }
   .svc-bar-row { margin-bottom: 10px; }
   .svc-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
   .svc-bar-track { background: var(--gray-border); border-radius: 4px; height: 6px; overflow: hidden; }
@@ -763,6 +774,8 @@
               <span>🔗 Booking link: <span class="booking-link-url" id="dash-booking-link"></span></span>
               <button class="copy-btn" onclick="copyBookingLink()">Copy</button>
             </div>
+            <button class="btn btn-outline btn-sm" onclick="manualRefresh()" id="refresh-btn">🔄 Refresh</button>
+            <span id="refresh-label" style="font-size:11px;color:var(--gray)"></span>
             <button class="btn btn-gray btn-sm" onclick="clinicLogout()">Sign Out</button>
           </div>
         </div>
@@ -792,10 +805,20 @@
         </div>
 
         <div class="today-section"><div class="today-title">🌅 Today's Schedule <span id="today-count" class="badge badge-confirmed" style="font-size:11px"></span></div><div class="today-grid" id="today-grid"></div></div>
-        <div class="table-card">
+        <!-- Upcoming 7-Day Calendar Strip (v19) -->
+        <div class="table-card" id="upcoming-calendar-card" style="margin-top:16px">
+          <div class="table-header">
+            <div class="table-title">📅 Next 7 Days</div>
+            <button class="btn btn-gray btn-sm" id="clear-date-btn" style="display:none" onclick="clearDateFilter()">✕ Clear Date</button>
+          </div>
+          <div class="upcoming-strip" id="upcoming-strip"></div>
+        </div>
+
+        <div class="table-card" style="margin-top:16px">
           <div class="table-header"><div class="table-title">All Appointments</div><input class="search-input" type="text" placeholder="🔍 Search patient..." oninput="filterTable(this.value)"></div>
           <div style="padding:12px 20px 4px"><div class="filter-row">
-            <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+            <button class="filter-btn" onclick="setFilter('all',this)">All</button>
+            <button class="filter-btn active" onclick="setFilter('upcoming',this)">📅 Upcoming</button>
             <button class="filter-btn" onclick="setFilter('confirmed',this)">✅ Confirmed</button>
             <button class="filter-btn" onclick="setFilter('pending',this)">⏳ Pending</button>
             <button class="filter-btn" onclick="setFilter('cancelled',this)">❌ Cancelled</button>
@@ -1108,7 +1131,7 @@ let dashboardClinicId=null;   // set after clinic login (dashboard context)
 let dashboardClinic=null;     // full clinic object after login
 let currentStep=1;
 let booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:'',payment_method:'cash',professional:''};
-let calYear,calMonth,appointments=[],activeFilter='all';
+let calYear,calMonth,appointments=[],activeFilter='upcoming',activeDateFilter=null,refreshInterval=null,lastRefreshTime=null;
 const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
 const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#fce7f3','#e0f2fe'];
 
@@ -1228,6 +1251,8 @@ async function handlePostLogin(user,showDashboard=true){
     document.getElementById('clinic-login').style.display='none';
     document.getElementById('clinic-dashboard').style.display='block';
     renderDashboard();
+    startAutoRefresh();
+    updateRefreshLabel();
   }
 }
 
@@ -1645,6 +1670,7 @@ function renderDashboard(){
   const tg=document.getElementById('today-grid');
   document.getElementById('today-count').textContent=todayAppts.length+' sessions';
   tg.innerHTML=todayAppts.length===0?'<div style="color:var(--gray);font-size:13px">No appointments scheduled for today.</div>':todayAppts.sort((a,b)=>new Date(a.dateTime)-new Date(b.dateTime)).map(a=>`<div class="today-appt" onclick="openAppt('${a.id}')"><div class="today-time">${fmtTime(a.dateTime)}</div><div class="today-name">${a.fname} ${a.lname}</div><div class="today-service">${a.service} · ${a.duration} min</div><div style="margin-top:6px">${statusBadge(a.status)}</div></div>`).join('');
+  renderUpcomingCalendar();
   renderTable();
   renderAnalytics();
   renderServicesManager();
@@ -1933,12 +1959,34 @@ function renderAnalytics(){
 }
 function renderTable(){
   const search=document.querySelector('.search-input')?document.querySelector('.search-input').value.toLowerCase():'';
-  let filtered=appointments.filter(a=>(a.fname+' '+a.lname+' '+a.phone).toLowerCase().includes(search)&&(activeFilter==='all'||a.status===activeFilter)).sort((a,b)=>new Date(b.dateTime)-new Date(a.dateTime));
-  if(!filtered.length){document.getElementById('appt-table-body').innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No appointments found</div></div></td></tr>';return;}
+  const todayStart=new Date();todayStart.setHours(0,0,0,0);
+  let filtered=appointments.filter(a=>{
+    const matchSearch=(a.fname+' '+a.lname+' '+a.phone).toLowerCase().includes(search);
+    if(!matchSearch)return false;
+    if(activeFilter==='upcoming'){
+      const aDate=new Date(a.dateTime);aDate.setHours(0,0,0,0);
+      if(aDate<todayStart)return false;
+      if(a.status==='cancelled')return false;
+      if(activeDateFilter){const dStr=a.dateTime.slice(0,10);if(dStr!==activeDateFilter)return false;}
+      return true;
+    }
+    return activeFilter==='all'||a.status===activeFilter;
+  });
+  filtered=filtered.sort((a,b)=>activeFilter==='upcoming'?new Date(a.dateTime)-new Date(b.dateTime):new Date(b.dateTime)-new Date(a.dateTime));
+  if(!filtered.length){
+    const msg=activeFilter==='upcoming'?'No upcoming appointments. New bookings will appear here automatically.':'No appointments found';
+    document.getElementById('appt-table-body').innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">${msg}</div></div></td></tr>`;return;
+  }
   document.getElementById('appt-table-body').innerHTML=filtered.map(a=>`<tr><td><div class="patient-cell"><div class="patient-avatar" style="background:${a.color}">${a.fname[0]}${a.lname[0]}</div><div><div class="patient-name">${a.fname} ${a.lname}</div><div class="patient-phone">${a.phone}</div></div></div></td><td style="font-size:12px">${a.service}<br><span style="color:var(--gray)">${a.duration} min</span></td><td style="font-size:12px">${fmtDate(a.dateTime)}<br><span style="color:var(--gray)">${fmtTime(a.dateTime)}</span></td><td>${statusBadge(a.status)}</td><td><span style="font-size:12px;color:var(--gray)">${a.remindersSent.length} sent</span> <button class="reminder-preview-btn" onclick="showSmsPreview('${a.id}')">email</button></td><td><button class="action-btn" onclick="openAppt('${a.id}')">View →</button></td></tr>`).join('');
 }
 function filterTable(v){renderTable();}
-function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
+function setFilter(f,btn){
+  activeFilter=f;activeDateFilter=null;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUpcomingCalendar();
+  renderTable();
+}
 function statusBadge(s){const m={confirmed:'badge-confirmed',pending:'badge-pending',cancelled:'badge-cancelled',completed:'badge-completed'},i={confirmed:'✅',pending:'⏳',cancelled:'❌',completed:'✔'};return`<span class="badge ${m[s]||'badge-pending'}"><span class="badge-dot"></span>${i[s]||''} ${s.charAt(0).toUpperCase()+s.slice(1)}</span>`;}
 function fmtDate(iso){return new Date(iso).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});}
 function fmtTime(iso){return new Date(iso).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit',hour12:true});}
@@ -2486,6 +2534,72 @@ async function submitContactForm(e){
   }
   document.getElementById('contact-form').style.display='none';
   document.getElementById('contact-success').style.display='block';
+}
+
+// ── v19: Auto-Refresh ─────────────────────────────────
+function startAutoRefresh(){
+  if(refreshInterval)clearInterval(refreshInterval);
+  refreshInterval=setInterval(async()=>{
+    await loadAppointments();
+    updateRefreshLabel();
+  },60000); // refresh every 60 seconds
+}
+function updateRefreshLabel(){
+  lastRefreshTime=new Date();
+  const el=document.getElementById('refresh-label');
+  if(el)el.textContent='Updated '+lastRefreshTime.toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit',hour12:true});
+}
+async function manualRefresh(){
+  const btn=document.getElementById('refresh-btn');
+  if(btn){btn.textContent='⏳ Refreshing...';btn.disabled=true;}
+  await loadAppointments();
+  updateRefreshLabel();
+  if(btn){btn.textContent='🔄 Refresh';btn.disabled=false;}
+  showToast('Dashboard refreshed ✓','success');
+}
+
+// ── v19: Upcoming Calendar Strip ──────────────────────
+function renderUpcomingCalendar(){
+  const card=document.getElementById('upcoming-calendar-card');
+  const strip=document.getElementById('upcoming-strip');
+  if(!card||!strip)return;
+  if(activeFilter!=='upcoming'){card.style.display='none';return;}
+  card.style.display='block';
+  const today=new Date();today.setHours(0,0,0,0);
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(today);d.setDate(today.getDate()+i);
+    const dStr=d.toISOString().slice(0,10);
+    const count=appointments.filter(a=>{
+      const aDate=new Date(a.dateTime);aDate.setHours(0,0,0,0);
+      return aDate.getTime()===d.getTime()&&a.status!=='cancelled';
+    }).length;
+    days.push({date:d,dateStr:dStr,count,isToday:i===0});
+  }
+  strip.innerHTML=days.map(({date,dateStr,count,isToday})=>{
+    const dayName=date.toLocaleDateString('en-PH',{weekday:'short'});
+    const dayNum=date.getDate();
+    const mon=date.toLocaleDateString('en-PH',{month:'short'});
+    const isSelected=activeDateFilter===dateStr;
+    return`<div class="upcoming-day${isSelected?' selected':''}${isToday?' today-day':''}" onclick="filterByDate('${dateStr}')">
+      <div class="upcoming-day-name">${isToday?'TODAY':dayName.toUpperCase()}</div>
+      <div class="upcoming-day-num">${dayNum}</div>
+      <div style="font-size:10px;color:var(--gray);margin-bottom:4px">${mon}</div>
+      <div class="upcoming-day-count${count===0?' zero':''}">${count===0?'—':count+' appt'+(count!==1?'s':'')}</div>
+    </div>`;
+  }).join('');
+  const clearBtn=document.getElementById('clear-date-btn');
+  if(clearBtn)clearBtn.style.display=activeDateFilter?'inline-flex':'none';
+}
+function filterByDate(dateStr){
+  activeDateFilter=activeDateFilter===dateStr?null:dateStr;
+  renderUpcomingCalendar();
+  renderTable();
+}
+function clearDateFilter(){
+  activeDateFilter=null;
+  renderUpcomingCalendar();
+  renderTable();
 }
 
 // ── Start ─────────────────────────────────────────────
