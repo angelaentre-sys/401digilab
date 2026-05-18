@@ -231,6 +231,11 @@
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--dark); color: white; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); z-index: 300; transform: translateY(80px); opacity: 0; transition: all .3s; max-width: 300px; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .toast.success { background: var(--green); }
+  .toast.warning { background: #d97706; }
+  @keyframes slideInRight { from{transform:translateX(120px);opacity:0} to{transform:translateX(0);opacity:1} }
+  @keyframes slideOutRight { from{transform:translateX(0);opacity:1} to{transform:translateX(120px);opacity:0} }
+  .booking-notif { position:fixed;top:20px;right:20px;background:#fff;border:2px solid var(--blue);border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;max-width:300px;animation:slideInRight .35s cubic-bezier(.22,1,.36,1); }
+  .booking-notif.hide { animation:slideOutRight .3s ease forwards; }
   .empty-state { text-align: center; padding: 48px 24px; color: var(--gray); }
   .empty-icon { font-size: 40px; margin-bottom: 12px; }
   .empty-text { font-size: 15px; font-weight: 600; color: var(--dark); }
@@ -867,7 +872,7 @@
             <button class="filter-btn" onclick="setFilter('cancelled',this)">❌ Cancelled</button>
             <button class="filter-btn" onclick="setFilter('completed',this)">✔ Completed</button>
           </div></div>
-          <div style="overflow-x:auto"><table><thead><tr><th>Patient</th><th>Service</th><th>Date & Time</th><th>Status</th><th>Reminders</th><th>Actions</th></tr></thead><tbody id="appt-table-body"></tbody></table></div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Service</th><th>Date & Time</th><th>Status</th><th>Reminders</th><th>Actions</th></tr></thead><tbody id="appt-table-body"></tbody></table></div>
         </div>
         <!-- Services Manager -->
         <div class="table-card" style="margin-top:16px">
@@ -1174,7 +1179,7 @@ let dashboardClinicId=null;   // set after clinic login (dashboard context)
 let dashboardClinic=null;     // full clinic object after login
 let currentStep=1;
 let booking={service:'',duration:0,date:null,time:'',fname:'',lname:'',phone:'',email:'',reason:'',payment_method:'cash',professional:''};
-let calYear,calMonth,appointments=[],activeFilter='upcoming',activeDateFilter=null,refreshInterval=null,lastRefreshTime=null,realtimeChannel=null;
+let calYear,calMonth,appointments=[],activeFilter='upcoming',activeDateFilter=null,refreshInterval=null,lastRefreshTime=null,realtimeChannel=null,bookingPageChannel=null;
 let calViewMode='7day',calDisplayYear=new Date().getFullYear(),calDisplayMonth=new Date().getMonth();
 const COLORS=['#1a56db','#0e7c3a','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#065f46'];
 const BG_COLORS=['#ede9fe','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#f0fdf4','#fce7f3','#e0f2fe'];
@@ -1314,23 +1319,43 @@ async function handlePostLogin(user,showDashboard=true){
 async function loadAppointments(){
   const clinicId=dashboardClinicId||currentClinic?.id;
   if(!clinicId)return;
-  const{data,error}=await db.from('appointments')
-    .select(`id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,payment_status,attending_professional,staff_notes,patients(id,full_name,phone,email)`)
+  const APPT_COLS='id,service,appointment_date,appointment_time,duration_minutes,status,notes,color,reminders_sent,payment_method,payment_status,attending_professional,staff_notes,patient_id';
+  // Try FK join first; fall back to flat query + separate patient lookup if FK not set up
+  let rows=null;
+  let patientMap={};
+  const{data:joined,error:joinErr}=await db.from('appointments')
+    .select(APPT_COLS+',patients(id,full_name,phone,email)')
     .eq('clinic_id',clinicId)
     .order('appointment_date',{ascending:false});
-  if(error){console.error(error);return;}
-  if(!data||data.length===0){
+  if(!joinErr&&joined){
+    rows=joined;
+  } else {
+    // Fallback: flat query then fetch patients separately
+    const{data:flat,error:flatErr}=await db.from('appointments')
+      .select(APPT_COLS)
+      .eq('clinic_id',clinicId)
+      .order('appointment_date',{ascending:false});
+    if(flatErr){console.error('loadAppointments error:',flatErr);return;}
+    rows=flat||[];
+    const ids=[...new Set(rows.map(r=>r.patient_id).filter(Boolean))];
+    if(ids.length){
+      const{data:pts}=await db.from('patients').select('id,full_name,phone,email').in('id',ids);
+      if(pts)pts.forEach(p=>{patientMap[p.id]=p;});
+    }
+  }
+  if(!rows||rows.length===0){
     appointments=[];
     if(dashboardClinicId)renderDashboard();
     return;
   }
-  appointments=data.map(row=>{
-    const full=row.patients?.full_name||'';
+  appointments=rows.map(row=>{
+    const pt=row.patients||patientMap[row.patient_id]||{};
+    const full=pt.full_name||'';
     const parts=full.trim().split(' ');
     const fname=parts[0]||'Unknown';
     const lname=parts.slice(1).join(' ')||'';
     const dateStr=row.appointment_date+'T'+(row.appointment_time||'09:00:00');
-    return{id:row.id,patientId:row.patients?.id,fname,lname,phone:row.patients?.phone||'',email:row.patients?.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',paymentStatus:row.payment_status||'unpaid',professional:row.attending_professional||'',staffNotes:row.staff_notes||''};
+    return{id:row.id,patientId:pt.id||row.patient_id,fname,lname,phone:pt.phone||'',email:pt.email||'',service:row.service,duration:row.duration_minutes,dateTime:new Date(dateStr).toISOString(),status:row.status,remindersSent:JSON.parse(row.reminders_sent||'[]'),reason:row.notes||'',color:row.color||COLORS[0],paymentMethod:row.payment_method||'cash',paymentStatus:row.payment_status||'unpaid',professional:row.attending_professional||'',staffNotes:row.staff_notes||''};
   });
   if(dashboardClinicId)renderDashboard();
 }
@@ -1387,6 +1412,8 @@ async function saveBooking(){
     });
   }
   showToast('Appointment booked! ✓','success');
+  // Stop listening for slot changes — booking is done
+  if(bookingPageChannel){db.removeChannel(bookingPageChannel);bookingPageChannel=null;}
 }
 
 // ── Clinic login (from clinic page) ──────────────────
@@ -1514,6 +1541,7 @@ async function modalAdminLogin(){
 async function clinicLogout(){
   const slug=dashboardClinic?.slug||currentClinic?.slug;
   if(realtimeChannel){db.removeChannel(realtimeChannel);realtimeChannel=null;}
+  if(bookingPageChannel){db.removeChannel(bookingPageChannel);bookingPageChannel=null;}
   if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}
   await db.auth.signOut();
   dashboardClinicId=null;
@@ -1666,7 +1694,11 @@ async function selectDate(y,mo,d){
     document.getElementById('afternoon-slots').innerHTML='';
     return;
   }
-  // Load taken slots from database
+  await fetchAndRenderSlots();
+  startBookingPageSync();
+}
+async function fetchAndRenderSlots(){
+  if(!booking.date)return;
   const dateStr=booking.date.toISOString().split('T')[0];
   const clinicId=currentClinic?.id||null;
   let takenSlots=[];
@@ -1674,7 +1706,23 @@ async function selectDate(y,mo,d){
     const{data}=await db.from('appointments').select('appointment_time').eq('clinic_id',clinicId).eq('appointment_date',dateStr).neq('status','cancelled');
     if(data)takenSlots=data.map(r=>dbTimeTo12hr(r.appointment_time));
   }
+  // If the slot the patient had selected just got taken by someone else, warn them
+  if(booking.time&&takenSlots.includes(booking.time)){
+    booking.time='';
+    const btn=document.getElementById('btn-step3');
+    if(btn)btn.disabled=true;
+    showToast('⚠️ That slot was just taken — please choose another time.','warning');
+  }
   renderTimeSlots(takenSlots);
+}
+function startBookingPageSync(){
+  if(bookingPageChannel){db.removeChannel(bookingPageChannel);bookingPageChannel=null;}
+  const clinicId=currentClinic?.id;
+  if(!clinicId)return;
+  bookingPageChannel=db.channel('booking-slots-'+clinicId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'appointments',filter:'clinic_id=eq.'+clinicId},
+      async()=>{await fetchAndRenderSlots();})
+    .subscribe();
 }
 function dbTimeTo12hr(t){
   const[h,m]=(t||'00:00').split(':').map(Number);
@@ -2656,8 +2704,17 @@ function startRealtimeSync(){
   let debounceTimer=null;
   realtimeChannel=db.channel('clinic-appts-'+dashboardClinicId)
     .on('postgres_changes',{event:'*',schema:'public',table:'appointments',filter:'clinic_id=eq.'+dashboardClinicId},
-      ()=>{
-        // Debounce: if multiple events fire at once, only reload once
+      (payload)=>{
+        // Show notification banner for new bookings
+        if(payload.eventType==='INSERT'){
+          const svc=payload.new?.service||'New appointment';
+          const dt=payload.new?.appointment_date;
+          const tm=payload.new?.appointment_time;
+          const dtLabel=dt?new Date(dt+'T00:00').toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'}):'';
+          const tmLabel=tm?dbTimeTo12hr(tm):'';
+          showBookingNotification(svc,dtLabel,tmLabel);
+        }
+        // Debounce reload so multiple rapid events only trigger one refresh
         clearTimeout(debounceTimer);
         debounceTimer=setTimeout(async()=>{
           await loadAppointments();
@@ -2665,6 +2722,25 @@ function startRealtimeSync(){
         },500);
       })
     .subscribe();
+}
+function showBookingNotification(service,date,time){
+  const old=document.getElementById('booking-notif-banner');
+  if(old){old.classList.add('hide');setTimeout(()=>old.remove(),300);}
+  const div=document.createElement('div');
+  div.id='booking-notif-banner';
+  div.className='booking-notif';
+  div.innerHTML=`
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <div style="font-size:26px;line-height:1">🔔</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px;color:var(--dark)">New Booking!</div>
+        <div style="font-size:12px;color:var(--blue);font-weight:600;margin-top:2px">${service}</div>
+        ${date||time?`<div style="font-size:11px;color:var(--gray);margin-top:3px">${[date,time].filter(Boolean).join(' · ')}</div>`:''}
+      </div>
+      <button onclick="document.getElementById('booking-notif-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--gray);font-size:18px;line-height:1;padding:0;flex-shrink:0">✕</button>
+    </div>`;
+  document.body.appendChild(div);
+  setTimeout(()=>{if(div.parentElement){div.classList.add('hide');setTimeout(()=>{if(div.parentElement)div.remove();},300);}},8000);
 }
 
 // ── v19/v20: Calendar (7-day strip + month view) ──────
